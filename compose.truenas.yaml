@@ -1,0 +1,72 @@
+# Render with docker compose --env-file .env -f compose.truenas.yaml config
+# before pasting into TrueNAS. See docs/DEPLOY_TRUENAS.md.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    image: postgres:17-bookworm
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: trmnl
+      POSTGRES_USER: trmnl
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - type: bind
+        source: /mnt/storage/apps/trmnl-db
+        target: /var/lib/postgresql/data
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U trmnl -d trmnl"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    logging: *default-logging
+  renderer:
+    image: ghcr.io/iskandiar/trmnl-creator-elixir-renderer:${TRMNL_IMAGE_TAG:-latest}
+    platform: linux/amd64
+    environment:
+      RENDERER_SECRET: ${RENDERER_SECRET:?Set RENDERER_SECRET}
+    init: true
+    shm_size: 256mb
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging: *default-logging
+  app:
+    image: ghcr.io/iskandiar/trmnl-creator-elixir:${TRMNL_IMAGE_TAG:-latest}
+    platform: linux/amd64
+    environment:
+      DATABASE_URL: ecto://trmnl:${POSTGRES_PASSWORD}@db/trmnl
+      PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?Set SECRET_KEY_BASE}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?Set TOKEN_ENCRYPTION_KEY}
+      RENDERER_SECRET: ${RENDERER_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:4000/oauth/callback}
+      GOOGLE_BROWSER_ORIGIN: ${GOOGLE_BROWSER_ORIGIN:-http://localhost:4000}
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${PORT:-4000}:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+      renderer:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:4000/health]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    logging: *default-logging

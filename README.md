@@ -29,6 +29,8 @@ Follow [Docker deployment](#deploy-on-an-amd64-home-server) for a home server or
 
 ## Deploy on an amd64 home server
 
+For TrueNAS Apps using GHCR images, follow the [TrueNAS installation and update guide](docs/DEPLOY_TRUENAS.md). It uses a dedicated database dataset and runs migrations automatically on startup.
+
 Requirements: Docker Engine with Compose v2, approximately 2 GB available RAM plus image/build storage, a hostname or LAN IP reachable by your TRMNL. All services explicitly target `linux/amd64`.
 
 ```sh
