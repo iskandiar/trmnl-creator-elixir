@@ -21,3 +21,5 @@ input:not([type=checkbox]),textarea,select{font-size:16px}button,.row-actions bu
 .form-grid{gap:8px}.family-row{flex-direction:column}.panel-heading{gap:8px;flex-wrap:wrap}
 .flash-stack{left:12px;right:12px;max-width:none}.toolbar{gap:5px}.toolbar button{padding:6px 9px}
 footer{margin:16px 0}.actions .primary{margin-left:0}}
+
+@media(max-width:600px){.module-tabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:4px}.module-tabs button{white-space:nowrap;flex-shrink:0}.intro>.status{margin-top:6px}.intro .eyebrow{display:none}.intro>div:first-child>p:last-child{display:none}.dashboard-tabs{gap:2px}.dashboard-tabs button{font-size:11px;padding:6px 8px}}

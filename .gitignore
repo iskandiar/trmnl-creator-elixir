@@ -34,3 +34,8 @@ test-results/
 playwright-report/
 __pycache__/
 *.pyc
+
+dist/
+*.dump
+.env.*
+!.env.example

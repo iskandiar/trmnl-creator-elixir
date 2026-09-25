@@ -98,6 +98,20 @@ Replaced Today + tomorrow with **3 zadania na dziś**. The module displays today
 
 The updated production browser workflow passed (11 seconds), including rejection of a fourth task, task completion, preview/publication and content refresh isolation. The generated Docker image was visually checked with all three tasks and one checked task. The development health endpoint returned HTTP 200.
 
+## UX and LAN deployment preparation — 2026-09-25
+
+`mix precommit` passed with 43 tests and three renderer tests excluded. `RENDERER_TEST=1 mix test` passed all **46 tests**. Three Python preflight tests passed. The full production browser suite passed **7 tests (1.2 minutes)**, including login recovery, keyboard navigation, appearance persistence, stale-preview feedback, and 390px mobile views of all three dashboard tabs.
+
+Actual one-bit 800×480 images of the clock, grouped agenda, month overview, week columns and week rows were generated and visually inspected. Mobile and desktop screenshots were also inspected; the fixed-size editor canvas scrolls within its panel rather than making the whole page overflow.
+
+A separate `trmnl-fresh-ux` Compose project started against a new database volume and all services became healthy; `/health` returned HTTP 200. The backup script created a restricted-permission dump of the disposable validation database, which restored successfully into a separate `trmnl_restore_ux` database (7 family entries and 1 screen). No user database was restored or overwritten. The development server was restarted to load the new clock schedule and retained its existing OAuth configuration.
+
+New deliverables: [UX review](UX_REVIEW.md), [Polish LAN deployment guide](DEPLOY_LAN.md), `scripts/preflight.py`, `scripts/backup.sh`, and `scripts/package_release.py`. The deployment archive uses an explicit file allowlist and excludes `.env`, OAuth downloads, local databases and user artifacts.
+
+The 77-file archive was extracted into a temporary directory, its SHA-256 verified, and its environment generator, preflight and `docker compose config --quiet` all passed. After the final mobile spacing adjustment, the focused UX browser test passed again (5 seconds). The extra fresh-install stack was stopped after verification; its test volume was retained.
+
+Visuals: [desktop](../artifacts/ux-desktop.png), [mobile content](../artifacts/ux-mobile-content.png), [mobile layout](../artifacts/ux-mobile-layout.png), [mobile settings](../artifacts/ux-mobile-settings.png), [month](../artifacts/ux-calendar-month.png), [week rows](../artifacts/ux-calendar-week-rows.png).
+
 ## Local services left for inspection
 
 - Validation Compose app: `http://localhost:4011` (password in ignored `.tmp/compose.env`).

@@ -2,7 +2,7 @@
 
 A Phoenix LiveView BYOS dashboard for one TRMNL OG. Combine read-only Google calendars from several accounts with family plans, meals, chores, countdowns and notes. Manage content independently, arrange blocks on a 20×12 grid, preview the 800×480 monochrome result, and explicitly publish the layout.
 
-Defaults are Polish, Europe/Warsaw, Monday-first weeks and 24-hour time. The week block uses seven event-list columns. V1 deliberately excludes playlists, multiple devices, calendar editing, custom HTML, public registration and `trmnlp` compatibility.
+Defaults are Polish, Europe/Warsaw, Monday-first weeks and 24-hour time. Calendar blocks include grouped agendas, week columns/rows and a month overview. V1 deliberately excludes playlists, multiple devices, calendar editing, custom HTML, public registration and `trmnlp` compatibility.
 
 ## Features
 
@@ -24,6 +24,7 @@ Follow [Docker deployment](#deploy-on-an-amd64-home-server) for a home server or
 - [Google Calendar setup](#connect-google-calendar-accounts) · [Polish setup guide](docs/GOOGLE_SETUP.md)
 - [Family content](#manage-family-content) · [Layout editor](#edit-preview-and-publish)
 - [Device pairing](#pair-the-trmnl-og) · [Backup and recovery](#operations-and-recovery)
+- [Polish LAN deployment guide](docs/DEPLOY_LAN.md) · [UX review](docs/UX_REVIEW.md)
 - [Validation notes](docs/VALIDATION.md) · [Repository map](#repository-map)
 
 ## Deploy on an amd64 home server
@@ -33,6 +34,7 @@ Requirements: Docker Engine with Compose v2, approximately 2 GB available RAM pl
 ```sh
 python3 scripts/generate_env.py
 # Edit .env: set PUBLIC_URL to http://YOUR_SERVER_IP:4000 (or your HTTPS URL).
+python3 scripts/preflight.py .env
 docker compose up --build -d --wait
 docker compose ps
 ```
@@ -86,12 +88,12 @@ Dates follow Europe/Warsaw. Completed one-off chores disappear from the screen b
 
 ## Edit, preview and publish
 
-- Open **Układ ekranu** and add a date, agenda, week, static text or family module block. Drag it to move; drag its bottom-right handle to resize. The inspector also provides numeric geometry controls for keyboard use. Switching tabs preserves the working layout.
+- Open **Układ ekranu** and add a date/time, agenda, week, month, static text or family module block. Drag it to move; drag its bottom-right handle to resize. The inspector also provides numeric geometry controls for keyboard use. Switching tabs preserves the working layout.
 - Choose calendars separately for each block, a title, text size and agenda horizon (1–30 days). An empty calendar selection intentionally shows no events. Week blocks need at least 14 columns and three rows.
 - Click **Zastosuj** to apply inspector edits, then **Zapisz szkic** to persist the draft. Blocks may not overlap or leave the 20×12 grid. Concurrent draft edits are rejected using revision checks.
 - **Podgląd** renders the current working layout, without publishing it. **Publikuj na TRMNL** saves and publishes that draft. The previous publication remains active until the new render succeeds.
 
-Family blocks have the same geometry, title and font controls. Meals and reminders also have a 1–30 day horizon; overdue and undated reminders remain visible. Edit their entries in **Treść rodzinna**, then use Preview to check how much fits. Google calendar selection applies to agenda and week blocks.
+Family blocks have the same geometry, title and font controls. Meals and reminders also have a 1–30 day horizon; overdue and undated reminders remain visible. Edit their entries in **Treść rodzinna**, then use Preview to check how much fits. Google calendar selection applies to agenda, week and month blocks. Choose classic, minimal or contrast headers, compact/comfortable spacing, grouped agenda days or week rows. The month overview shows event counts; older days outside the synchronization window show a dash.
 
 Preview and publication both generate escaped HTML internally and pass it to the same Chromium/Playwright → ImageMagick pipeline. It blocks external browser requests and scripts, uses DejaVu Sans in Docker, and produces a one-bit, 800×480 grayscale PNG. Text overflow is marked **Więcej ↓**; partially visible event rows are hidden. Inspect the preview when changing a block's size or content.
 
@@ -108,7 +110,7 @@ Contracts:
 | Endpoint | Authentication | Behavior |
 | --- | --- | --- |
 | `GET /api/setup` | Approved MAC in `ID`, during pairing; or existing `Access-Token` | API key, friendly ID and a signed BMP setup image |
-| `GET /api/display` | `ID` + `Access-Token` | `status: 0`, signed image URL, image hash filename, `refresh_rate: 900` |
+| `GET /api/display` | `ID` + `Access-Token` | `status: 0`, signed image URL, image hash filename, `refresh_rate: 240` with a published clock, otherwise `900` |
 | `GET /api/image?token=…` | Signed read-only URL, valid 24 hours | Current successful PNG, or setup PNG before first publication |
 | `GET /api/setup-image.bmp?token=…` | Signed read-only URL | Uncompressed monochrome BMP for OG onboarding |
 | `POST /api/log` | `ID` + `Access-Token` | Records safe issue categories and numeric telemetry, returns `status: 200` |
@@ -186,3 +188,5 @@ The deployment test stops/restarts **that project's** services, simulates render
 `AGENTS.md` is preserved as supplied. Real Google consent and the physical TRMNL/home-server integration cannot be inferred from fixture or simulated-device success.
 
 The daily three-task module replaces Today + tomorrow. Existing entries and blocks retain their internal type key for compatibility; no content is deleted. Legacy days with more than three entries display the first three by creation order; remove or move excess entries before adding another. Completed tasks still count toward the daily limit.
+
+The date/time block shows the Warsaw time at image generation with “±5 min”. Published clock screens refresh server-side every minute and devices poll every four minutes; outages can leave an older image. Other screens retain 15-minute device polling. Use `python3 scripts/package_release.py` from the source checkout to create the source deployment archive and checksum in `dist/`.

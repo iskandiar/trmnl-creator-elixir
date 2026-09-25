@@ -95,3 +95,22 @@ const Grid = {
 const liveSocket = new LiveSocket("/live", Socket, {params: {_csrf_token: document.querySelector("meta[name=csrf-token]").content}, hooks: {Grid}});
 liveSocket.connect();
 window.liveSocket = liveSocket;
+
+// Keyboard access to the same selection and tabs used by pointer users.
+document.addEventListener("keydown", event => {
+  const block = event.target.closest(".grid-block");
+  if (block && ["Enter", " "].includes(event.key)) {
+    event.preventDefault();
+    block.click();
+  }
+  const tab = event.target.closest(".dashboard-tabs [role=tab]");
+  if (tab && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+    const tabs = [...tab.parentElement.querySelectorAll("[role=tab]")];
+    const index = tabs.indexOf(tab);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 :
+      (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    event.preventDefault();
+    tabs[next].focus();
+    tabs[next].click();
+  }
+});

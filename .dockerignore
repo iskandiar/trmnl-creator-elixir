@@ -7,3 +7,7 @@ renderer/node_modules
 .tmp
 artifacts
 test
+
+dist/
+*.dump
+.env.*

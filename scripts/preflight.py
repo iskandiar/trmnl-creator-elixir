@@ -22,7 +22,7 @@ def validate(values):
         errors.append('TOKEN_ENCRYPTION_KEY: wymagane 32 bajty zakodowane base64')
     for name in ['PUBLIC_URL', 'GOOGLE_BROWSER_ORIGIN']:
         try:
-            url = urlsplit(values.get(name, ''))
+            url = urlsplit(values.get(name, 'http://localhost:4000' if name == 'GOOGLE_BROWSER_ORIGIN' else ''))
             _ = url.port
             if url.scheme not in ['http', 'https'] or not url.hostname or url.path not in ['', '/'] or url.query or url.fragment or url.username:
                 raise ValueError()
@@ -31,7 +31,7 @@ def validate(values):
     if bool(values.get('GOOGLE_CLIENT_ID')) != bool(values.get('GOOGLE_CLIENT_SECRET')):
         errors.append('Google OAuth: ustaw jednocześnie GOOGLE_CLIENT_ID i GOOGLE_CLIENT_SECRET')
     if values.get('GOOGLE_CLIENT_ID'):
-        callback = values.get('GOOGLE_BROWSER_ORIGIN', '').rstrip('/') + '/oauth/callback'
+        callback = values.get('GOOGLE_BROWSER_ORIGIN', 'http://localhost:4000').rstrip('/') + '/oauth/callback'
         if values.get('GOOGLE_REDIRECT_URI') != callback:
             errors.append('GOOGLE_REDIRECT_URI: musi odpowiadać GOOGLE_BROWSER_ORIGIN + /oauth/callback')
     try:

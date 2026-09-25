@@ -12,5 +12,5 @@ temporary_file=$(mktemp "${backup_file}.XXXXXX")
 trap 'rm -f "$temporary_file"' EXIT HUP INT TERM
 docker compose --env-file "$env_file" exec -T db pg_dump -U trmnl -d trmnl -Fc > "$temporary_file"
 test -s "$temporary_file"
-mv "$temporary_file" "$backup_file"
+ln "$temporary_file" "$backup_file"
 echo "Zapisano kopię bazy. Zachowaj także plik .env w bezpiecznym miejscu."

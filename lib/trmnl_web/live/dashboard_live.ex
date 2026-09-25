@@ -420,6 +420,9 @@ defmodule TrmnlWeb.DashboardLive do
                     data-y={b["y"]}
                     data-w={b["w"]}
                     data-h={b["h"]}
+                    tabindex="0"
+                    role="button"
+                    aria-label={"#{block_label(b["type"])}: #{b["title"]}. Enter — ustawienia."}
                     class={["grid-block", @selected == b["id"] && "selected"]}
                     style={"left:#{b["x"]*40}px;top:#{b["y"]*40}px;width:#{b["w"]*40}px;height:#{b["h"]*40}px"}
                     phx-click="select"
