@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "esbuild assets/app.js --bundle --minify --outfile=priv/static/assets/js/app.js",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "@playwright/test": "1.56.1"
+  }
+}

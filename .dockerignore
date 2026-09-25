@@ -1,0 +1,9 @@
+_build
+deps
+node_modules
+renderer/node_modules
+.git
+.env
+.tmp
+artifacts
+test
