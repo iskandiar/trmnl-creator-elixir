@@ -15,6 +15,8 @@ defmodule Trmnl.ScreenHTML do
     .event{border-top:1px solid black;padding:2px 0;overflow-wrap:anywhere}.time{font-weight:bold}.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;height:100%}
     .day{overflow:hidden;border-right:1px solid black;padding-right:4px}.day strong{font-size:16px}.day .event{font-size:inherit}
     #{Trmnl.WeatherHTML.styles()}
+    #{Trmnl.BatteryHTML.styles()}
+    #{Trmnl.PreschoolHTML.styles()}
     .overflow{position:absolute;bottom:0;right:4px;background:white;border-top:1px solid black;font-size:14px;font-weight:bold;display:none;padding:1px 5px}
     h3{font-size:inherit;margin:6px 0 3px}.family-owner{font-weight:bold}
     p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -51,6 +53,12 @@ defmodule Trmnl.ScreenHTML do
 
         "header" ->
           "<div class=clock><div class=clock-date>#{Enum.at(@days, Date.day_of_week(today) - 1)}<span>#{Calendar.strftime(today, "%d.%m.%Y")}</span></div><div class=clock-time>#{Calendar.strftime(now, "%H:%M")}<small>±5 min</small></div></div>"
+
+        "preschool" ->
+          Trmnl.PreschoolHTML.render(Trmnl.PreschoolMenus.status(), today, Map.get(b, "days", 2))
+
+        "battery" ->
+          Trmnl.BatteryHTML.render(Trmnl.Devices.device())
 
         "weather" ->
           Trmnl.WeatherHTML.render(Trmnl.Weather.forecast(b), now)

@@ -1,5 +1,5 @@
 defmodule Trmnl.Layout do
-  @types ~w(weather agenda week month header text today_tomorrow dinner reminders countdowns family_note)
+  @types ~w(preschool battery weather agenda week month header text today_tomorrow dinner reminders countdowns family_note)
   # Retain the stored type key so existing blocks and family entries keep working.
   def upgrade(layout) do
     Map.update!(layout, "blocks", fn blocks ->

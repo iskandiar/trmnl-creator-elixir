@@ -2,6 +2,39 @@ defmodule Trmnl.WeatherHTMLTest do
   use ExUnit.Case, async: true
   alias Trmnl.WeatherHTML
 
+  test "weather symbols map to monochrome icons including night and unknown conditions" do
+    for {symbol, icon} <- [
+          {"clearsky_day", "sun"},
+          {"clearsky_night", "moon"},
+          {"partlycloudy_day", "partly-cloudy"},
+          {"cloudy", "cloud"},
+          {"rain", "rain"},
+          {"heavyrainandthunder", "thunder"},
+          {"snow", "snow"},
+          {"sleet", "sleet"},
+          {"fog", "fog"},
+          {"new-symbol", "unknown"}
+        ] do
+      now = ~U[2026-09-27 10:30:00Z]
+      document = render([%{row(~U[2026-09-27 10:00:00Z], 15) | symbol: symbol}], now)
+      assert document |> LazyHTML.query(".weather-icon[data-icon='#{icon}']") |> Enum.count() == 1
+    end
+  end
+
+  test "rain indicator distinguishes wet, dry and missing precipitation" do
+    for {rain, state, label} <- [
+          {0.8, "wet", "0.8 mm/1 h"},
+          {0, "dry", "Bez opadów"},
+          {nil, "unknown", "brak danych"}
+        ] do
+      document =
+        render([%{row(~U[2026-09-27 10:00:00Z], 15) | rain: rain}], ~U[2026-09-27 10:30:00Z])
+
+      assert text(document, ".weather-rain[data-rain='#{state}']") =~ label
+      assert document |> LazyHTML.query(".weather-rain .rain-icon") |> Enum.count() == 1
+    end
+  end
+
   test "emphasizes the current hour, plots the next 24 hours and summarizes tomorrow only" do
     now = ~U[2026-09-27 10:30:00Z]
 

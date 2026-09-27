@@ -15,8 +15,8 @@ defmodule Trmnl.WeatherHTML do
       stale = if forecast.stale, do: " · zapisane dane", else: ""
 
       "<div class=weather>" <>
-        "<div class=weather-main><div><span class=weather-now>Teraz · prognoza</span><strong>#{number(current.temperature)}°C</strong></div><span class=weather-condition>#{condition(current.symbol)}</span></div>" <>
-        "<p class=weather-details>Wiatr #{number(current.wind)} m/s · #{rain(current.rain)}</p>" <>
+        "<div class=weather-main><div><span class=weather-now>Teraz · prognoza</span><strong>#{number(current.temperature)}°C</strong></div><div class=weather-summary>#{Trmnl.WeatherIcons.condition(current.symbol)}<span class=weather-condition>#{condition(current.symbol)}</span></div></div>" <>
+        "<div class=weather-details><span>Wiatr #{number(current.wind)} m/s</span>#{rain_indicator(current.rain)}</div>" <>
         graph(forecast.rows, current) <>
         tomorrow(forecast.rows, now) <>
         "<div class=weather-footer><small>Akt. #{hour(forecast.fetched_at)}#{stale}</small>#{attribution()}</div></div>"
@@ -30,8 +30,8 @@ defmodule Trmnl.WeatherHTML do
     .weather{height:100%;display:flex;flex-direction:column;gap:2px}
     .weather-main{display:flex;align-items:center;justify-content:space-between;gap:8px}
     .weather-main strong{display:block;font-size:28px;line-height:1;font-weight:bold;white-space:nowrap}
-    .weather-now{display:block;font-size:10px;line-height:11px}.weather-condition{font-size:12px;text-align:right;max-width:45%}
-    .weather-details{font-size:10px;line-height:11px}.weather-chart{display:block;width:100%;flex:1;min-height:48px;overflow:visible}
+    .weather-now{display:block;font-size:10px;line-height:11px}.weather-summary{display:flex;align-items:center;justify-content:flex-end;gap:4px;max-width:55%;min-width:0}.weather-icon{width:36px;height:36px;flex-shrink:0}.weather-condition{font-size:11px;text-align:right}.rain-icon{width:11px;height:11px;vertical-align:middle;flex-shrink:0}.weather-rain{display:inline-flex;align-items:center;gap:3px}.weather-rain[data-rain=wet]{font-weight:bold}.weather-rain[data-rain=wet] .rain-icon path{fill:black}
+    .weather-details{display:flex;justify-content:space-between;gap:4px;font-size:10px;line-height:11px}.weather-chart{display:block;width:100%;flex:1;min-height:48px;overflow:visible}
     .weather-tomorrow{display:flex;justify-content:space-between;gap:4px;border-top:1px solid black;padding-top:2px;font-size:12px;line-height:14px}
     .weather-footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px;font-size:8px;line-height:9px}
     .weather-footer small,.weather-source{font-size:inherit}.weather-source a{color:black;text-decoration:none}
@@ -125,7 +125,20 @@ defmodule Trmnl.WeatherHTML do
   end
 
   defp number(value), do: value |> Kernel.*(1.0) |> Float.round(1) |> Float.to_string()
+
+  defp rain_indicator(value) do
+    state =
+      cond do
+        is_nil(value) -> "unknown"
+        value > 0 -> "wet"
+        true -> "dry"
+      end
+
+    "<span class=weather-rain data-rain='#{state}'>#{Trmnl.WeatherIcons.rain()}#{rain(value)}</span>"
+  end
+
   defp rain(nil), do: "Opady: brak danych"
+  defp rain(value) when value == 0, do: "Bez opadów · 1 h"
   defp rain(value), do: "Opady #{number(value)} mm/1 h"
 
   defp hour(at),

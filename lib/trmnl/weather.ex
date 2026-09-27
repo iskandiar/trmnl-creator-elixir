@@ -166,7 +166,7 @@ defmodule Trmnl.Weather do
                 at: at,
                 temperature: temp,
                 wind: wind,
-                rain: if(is_number(rain), do: rain),
+                rain: if(is_number(rain) and rain >= 0, do: rain),
                 symbol: if(is_binary(symbol), do: symbol, else: "")
               }
             ]

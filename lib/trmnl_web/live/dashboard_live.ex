@@ -26,15 +26,24 @@ defmodule TrmnlWeb.DashboardLive do
      |> FamilyEditor.init()}
   end
 
-  defp status(socket),
-    do:
-      assign(socket,
-        accounts: Calendars.accounts(),
-        calendars: Calendars.options(),
-        device: Devices.device(),
-        diagnostics: Diagnostics.recent(),
-        published_at: Publication.screen().published_at
-      )
+  defp status(socket) do
+    menu = Trmnl.PreschoolMenus.status()
+
+    socket
+    |> assign(
+      accounts: Calendars.accounts(),
+      calendars: Calendars.options(),
+      device: Devices.device(),
+      diagnostics: Diagnostics.recent(),
+      published_at: Publication.screen().published_at,
+      preschool_menu: menu,
+      menu_ai_configured: Trmnl.MenuAI.configured?()
+    )
+    |> assign_new(:menu_form, fn ->
+      to_form(%{"enabled" => menu.enabled, "mode" => menu.mode}, as: :menu)
+    end)
+    |> stream(:preschool_days, Enum.map(menu.days, &Map.put(&1, :id, &1["date"])), reset: true)
+  end
 
   @impl true
   def handle_info(:status, socket) do
@@ -57,9 +66,11 @@ defmodule TrmnlWeb.DashboardLive do
   end
 
   def handle_event("add", %{"type" => type}, socket)
-      when type in ~w(weather header text agenda week month today_tomorrow dinner reminders countdowns family_note) do
+      when type in ~w(preschool battery weather header text agenda week month today_tomorrow dinner reminders countdowns family_note) do
     {w, h} =
       case type do
+        "preschool" -> {10, 7}
+        "battery" -> {5, 3}
         "weather" -> {10, 5}
         "week" -> {20, 4}
         "month" -> {10, 6}
@@ -81,6 +92,8 @@ defmodule TrmnlWeb.DashboardLive do
           "h" => h,
           "title" =>
             %{
+              "preschool" => "Jadłospis przedszkola",
+              "battery" => "Bateria",
               "weather" => "Pogoda",
               "header" => "Dzisiaj",
               "text" => "Notatka",
@@ -96,7 +109,7 @@ defmodule TrmnlWeb.DashboardLive do
           "text" => "",
           "calendars" => Enum.map(socket.assigns.calendars, &elem(&1, 0)),
           "font_size" => 14,
-          "days" => 7
+          "days" => if(type == "preschool", do: 2, else: 7)
         }
       end
 
@@ -221,6 +234,37 @@ defmodule TrmnlWeb.DashboardLive do
     end
   end
 
+  def handle_event("preschool:settings", %{"menu" => attrs}, socket) do
+    case Trmnl.PreschoolMenus.save_settings(attrs) do
+      {:ok, menu} ->
+        {:noreply,
+         socket
+         |> assign(
+           menu_form: to_form(%{"enabled" => menu.enabled, "mode" => menu.mode}, as: :menu),
+           notice: "Zapisano ustawienia jadłospisu."
+         )
+         |> status()}
+
+      {:error, :missing_key} ->
+        {:noreply,
+         assign(socket, notice: "Skonfiguruj GEMINI_API_KEY lub wybierz import bez AI.")}
+
+      _ ->
+        {:noreply, assign(socket, notice: "Nieprawidłowe ustawienia importu.")}
+    end
+  end
+
+  def handle_event("preschool:import", _, socket) do
+    case Trmnl.PreschoolMenus.enqueue() do
+      {:ok, _} ->
+        {:noreply,
+         assign(socket, notice: "Import jadłospisu w kolejce. Status odświeża się co 5 sekund.")}
+
+      _ ->
+        {:noreply, assign(socket, notice: "Nie udało się zlecić importu. Spróbuj ponownie.")}
+    end
+  end
+
   def handle_event("sync", _, socket) do
     %{} |> Trmnl.SyncWorker.new() |> Oban.insert()
 
@@ -318,6 +362,8 @@ defmodule TrmnlWeb.DashboardLive do
     do:
       Family.label(type) ||
         %{
+          "preschool" => "Jadłospis przedszkola",
+          "battery" => "Bateria",
           "weather" => "Pogoda",
           "header" => "Data i godzina",
           "agenda" => "Agenda",
@@ -419,6 +465,8 @@ defmodule TrmnlWeb.DashboardLive do
                       [
                         {"header", "Data i godzina"},
                         {"weather", "Pogoda"},
+                        {"battery", "Bateria"},
+                        {"preschool", "Jadłospis przedszkola"},
                         {"agenda", "Agenda"},
                         {"week", "Tydzień"},
                         {"month", "Miesiąc"},
@@ -457,6 +505,10 @@ defmodule TrmnlWeb.DashboardLive do
                       <%= cond do %>
                         <% b["type"] == "text" -> %>
                           {b["text"]}
+                        <% b["type"] == "preschool" -> %>
+                          Przedszkole 123 · posiłki na każdy dzień
+                        <% b["type"] == "battery" -> %>
+                          Poziom baterii urządzenia
                         <% b["type"] == "weather" -> %>
                           Prognoza · MET Norway
                         <% b["type"] in Family.kinds() -> %>
@@ -557,6 +609,18 @@ defmodule TrmnlWeb.DashboardLive do
                 <p :if={@block["type"] == "header"} class="hint">
                   Czas z momentu generowania obrazu · ±5 min przy działającym połączeniu. TRMNL pobiera ekran z zegarem co 4 minuty.
                 </p>
+                <p :if={@block["type"] == "preschool"} id="preschool-block-help" class="hint">
+                  Import skonfigurujesz w zakładce „Kalendarze i urządzenie”.
+                  <button
+                    id="open-preschool-settings"
+                    type="button"
+                    phx-click="tab"
+                    phx-value-tab="settings"
+                  >Ustaw import</button>
+                </p>
+                <p :if={@block["type"] == "battery"} id="battery-settings" class="hint">
+                  Ostatni odczyt urządzenia: napięcie i szacowany procent baterii TRMNL OG. Dane aktualizują się przy kontakcie urządzenia i kolejnym renderowaniu ekranu.
+                </p>
                 <fieldset :if={@block["type"] == "weather"} id="weather-settings">
                   <legend>Lokalizacja pogody</legend>
                   <label for="weather-latitude">
@@ -607,7 +671,7 @@ defmodule TrmnlWeb.DashboardLive do
                 >
                   {n} px
                 </option></select></label>
-                <label :if={@block["type"] in ~w(agenda dinner reminders)}>Liczba dni<input
+                <label :if={@block["type"] in ~w(agenda dinner reminders preschool)}>Liczba dni<input
                   name="block[days]"
                   type="number"
                   min="1"
@@ -753,6 +817,12 @@ defmodule TrmnlWeb.DashboardLive do
               </dl>
             </section>
           </div>
+          <TrmnlWeb.PreschoolSettings.panel
+            menu={@preschool_menu}
+            form={@menu_form}
+            ai_configured={@menu_ai_configured}
+            streams={@streams}
+          />
           <section class="panel diagnostics">
             <h2>Diagnostyka</h2><p :if={@diagnostics == []}>Brak zarejestrowanych błędów.</p><article :for={
               d <- @diagnostics

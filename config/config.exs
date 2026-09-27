@@ -14,7 +14,11 @@ config :trmnl, Oban,
   plugins: [
     {Oban.Plugins.Pruner, max_age: 604_800},
     {Oban.Plugins.Cron,
-     crontab: [{"*/5 * * * *", Trmnl.SyncWorker}, {"* * * * *", Trmnl.ClockWorker}]}
+     crontab: [
+       {"*/5 * * * *", Trmnl.SyncWorker},
+       {"* * * * *", Trmnl.ClockWorker},
+       {"0 20 * * 0", Trmnl.PreschoolMenuWorker, timezone: "Europe/Warsaw"}
+     ]}
   ]
 
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase

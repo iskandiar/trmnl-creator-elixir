@@ -32,3 +32,5 @@ config :trmnl,
       "GOOGLE_REDIRECT_URI",
       "http://localhost:#{if config_env() == :dev, do: System.get_env("PORT", "4000"), else: "4000"}/oauth/callback"
     )
+
+config :trmnl, gemini_api_key: System.get_env("GEMINI_API_KEY", "")

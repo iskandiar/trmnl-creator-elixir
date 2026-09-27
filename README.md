@@ -90,7 +90,7 @@ Dates follow Europe/Warsaw. Completed one-off chores disappear from the screen b
 
 ## Edit, preview and publish
 
-- Open **Układ ekranu** and add a date/time, agenda, week, month, weather, static text or family module block. Drag it to move; drag its bottom-right handle to resize. The inspector also provides numeric geometry controls for keyboard use. Switching tabs preserves the working layout.
+- Open **Układ ekranu** and add a date/time, agenda, week, month, weather, battery, static text or family module block. Drag it to move; drag its bottom-right handle to resize. The inspector also provides numeric geometry controls for keyboard use. Switching tabs preserves the working layout.
 - Choose calendars separately for each block, a title, text size and agenda horizon (1–30 days). An empty calendar selection intentionally shows no events. Blocks can be as small as one grid cell (40 × 40 px); choose a larger size to fit their content.
 - Click **Zastosuj** to apply inspector edits, then **Zapisz szkic** to persist the draft. Blocks may not overlap or leave the 20×12 grid. Concurrent draft edits are rejected using revision checks.
 - **Podgląd** renders the current working layout, without publishing it. **Publikuj na TRMNL** saves and publishes that draft. The previous publication remains active until the new render succeeds.
@@ -106,6 +106,22 @@ The block emphasizes the current hour’s forecast temperature (°C), with wind 
 Data comes from [MET Norway Locationforecast](https://api.met.no/weatherapi/locationforecast/2.0/documentation), the forecast service used by Yr. Requests run on the server with an identifying User-Agent, coordinates limited to four decimal places, and an in-memory cache honoring Expires and Last-Modified headers. Scheduled screen refreshes reuse that cache; failures back off for five minutes and show marked cached forecasts when available, otherwise an unavailable message. The cache resets on application restart.
 
 Weather data is attributed to MET Norway under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Values are rounded and condition descriptions translated into Polish. API usage follows the [MET Norway terms](https://api.met.no/doc/TermsOfService).
+
+The current forecast includes a monochrome condition icon (including day/night, rain, snow, fog and thunderstorms). A droplet indicator shows predicted precipitation in mm over the next hour, with a filled drop and bold value when precipitation is expected. Zero is labeled **Bez opadów**; missing data is labeled explicitly. This is precipitation amount, not a probability of rain.
+
+## Preschool menu block
+
+In **Kalendarze i urządzenie**, configure **Jadłospis przedszkola** and enable automatic imports. The app reads [Preschool 123's menu](https://przedszkole123.dlaprzedszkoli.eu/?m=strona&id=30) every Sunday at **20:00 Europe/Warsaw**, including daylight-saving changes. Use **Importuj teraz** for the first import or if the school posts later. The server must be running at the scheduled time.
+
+The default mode reads the HTML table directly, free without an API key. Optional **Gemini 2.5 Flash-Lite** shortens each meal for the display. Create a key in [Google AI Studio](https://aistudio.google.com/apikey), set `GEMINI_API_KEY` in the app environment (or Compose `.env`), restart the app, then select Gemini mode and save. Google's [free tier](https://ai.google.dev/gemini-api/docs/pricing#gemini-2.5-flash-lite) has quotas; use a free-tier project to avoid charges. Only the public menu is sent to Google. Unchanged menus reuse the saved summaries, and there is no fallback to another model.
+
+Add **Jadłospis przedszkola** in the layout editor, preview and publish. New blocks show **Dzisiaj** and **Jutro** (today and tomorrow), with breakfast, lunch and afternoon snack. A day without a published menu is labeled explicitly, including weekends. You can change the number of upcoming days in the inspector. The setup panel retains the full source text; compact blocks may shorten meal descriptions. Consult the original menu for complete ingredients and allergens. Dates come from the source, so expired menus are never relabeled as the current week. Failed imports preserve the previous menu and display an error in setup. This menu is separate from family meal plans.
+
+## Battery block
+
+Add **Bateria** in the layout editor. It uses the device's stored `battery-voltage` telemetry and shows an approximate charge percentage, battery icon, voltage and last contact time. The estimate follows the [TRMNL OG voltage calculation](https://help.trmnl.com/en/articles/10556850-device-battery-faq); it is not a measured state of charge. A low-battery notice appears at 10% or below. Missing telemetry shows a waiting message instead of 0%.
+
+The block defaults to 200 × 120 px. New readings appear on the next screen render after device contact, and reach the device on its next image download. Scheduled refreshes continue to update it without a Google account connected.
 
 Preview and publication both generate escaped HTML internally and pass it to the same Chromium/Playwright → ImageMagick pipeline. It blocks external browser requests and scripts, uses DejaVu Sans in Docker, and produces a one-bit, 800×480 grayscale PNG. Text overflow is marked **Więcej ↓**; partially visible event rows are hidden. Inspect the preview when changing a block's size or content.
 

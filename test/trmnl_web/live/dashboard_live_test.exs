@@ -2,6 +2,39 @@ defmodule TrmnlWeb.DashboardLiveTest do
   use TrmnlWeb.ConnCase
   import Phoenix.LiveViewTest
 
+  test "preschool setup saves free import settings and queues a manual import", %{conn: conn} do
+    {:ok, view, _} = conn |> init_test_session(admin: TrmnlWeb.Auth.issue()) |> live("/")
+    view |> element("#add-preschool") |> render_click()
+    assert has_element?(view, "#preschool-block-help")
+    view |> element("#save") |> render_click()
+    [block] = Trmnl.Publication.screen().draft["blocks"]
+    assert block["type"] == "preschool"
+    view |> element("#open-preschool-settings") |> render_click()
+    assert has_element?(view, "#preschool-settings")
+
+    view
+    |> form("#preschool-import-form", menu: %{mode: "plain", enabled: "true"})
+    |> render_submit()
+
+    assert Trmnl.PreschoolMenus.status().enabled
+    view |> element("#preschool-import") |> render_click()
+
+    assert [%Oban.Job{args: %{"manual" => true}}] =
+             Oban.Testing.all_enqueued(worker: Trmnl.PreschoolMenuWorker, repo: Trmnl.Repo)
+  end
+
+  test "battery block can be added and saved without calendar or weather settings", %{conn: conn} do
+    {:ok, view, _} = conn |> init_test_session(admin: TrmnlWeb.Auth.issue()) |> live("/")
+    view |> element("#add-battery") |> render_click()
+    assert has_element?(view, "#battery-settings")
+    refute has_element?(view, "#weather-settings")
+    refute has_element?(view, "input[name='block[calendars][]']")
+    view |> element("#save") |> render_click()
+    [block] = Trmnl.Publication.screen().draft["blocks"]
+    assert block["type"] == "battery"
+    assert block["title"] == "Bateria"
+  end
+
   test "weather location can be configured and persisted without calendar settings", %{conn: conn} do
     conn = init_test_session(conn, admin: TrmnlWeb.Auth.issue())
     {:ok, view, _} = live(conn, "/")
