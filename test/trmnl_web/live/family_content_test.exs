@@ -8,22 +8,24 @@ defmodule TrmnlWeb.FamilyContentTest do
     %{view: view}
   end
 
-  test "daily tasks support complete and undo without time or calendar settings", %{view: view} do
+  test "todos support complete and undo without dates, time or calendar settings", %{view: view} do
     view |> element("#tab-content") |> render_click()
 
     for n <- 1..3 do
       view
-      |> form("#family-form", family: %{title: "Task #{n}", date: "2026-09-25"})
+      |> form("#family-form", family: %{title: "Task #{n}"})
       |> render_submit()
     end
 
     refute has_element?(view, "[name='family[time]']")
+    refute has_element?(view, "[name='family[date]']")
 
     view
-    |> form("#family-form", family: %{title: "Fourth", date: "2026-09-25"})
+    |> form("#family-form", family: %{title: "Fourth"})
     |> render_submit()
 
-    assert has_element?(view, "#family-form .error")
+    refute has_element?(view, "#family-form .error")
+    assert length(Family.list("today_tomorrow")) == 4
     [item | _] = Family.list("today_tomorrow")
     view |> element("#complete-#{item.id}") |> render_click()
     assert has_element?(view, "#restore-#{item.id}")
@@ -46,6 +48,7 @@ defmodule TrmnlWeb.FamilyContentTest do
     for kind <- Family.kinds() do
       view |> element("#module-#{kind}") |> render_click()
       attrs = %{title: "Wpis #{kind}", body: "Szczegóły", date: "2026-09-24", owner: "Tata"}
+      attrs = if kind == "today_tomorrow", do: Map.delete(attrs, :date), else: attrs
       view |> form("#family-form", family: attrs) |> render_submit()
       [item] = Family.list(kind)
       assert has_element?(view, "#family_items-#{item.id}")

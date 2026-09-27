@@ -84,7 +84,7 @@ defmodule Trmnl.RendererTest do
           "w" => 20,
           "h" => 6,
           "y" => 2,
-          "title" => "Ten tydzień",
+          "title" => "Najbliższe 7 dni",
           "calendars" => ["1:dom", "2:praca"]
         }),
         block(%{
@@ -109,11 +109,10 @@ defmodule Trmnl.RendererTest do
     }
 
     today = DateTime.now!("Europe/Warsaw") |> DateTime.to_date()
-    monday = Date.add(today, 1 - Date.day_of_week(today))
 
     events =
       for i <- 0..6, j <- 1..5 do
-        date = Date.add(monday, i) |> Date.to_iso8601()
+        date = Date.add(today, i) |> Date.to_iso8601()
 
         %{
           "id" => "#{i}-#{j}",

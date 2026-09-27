@@ -60,12 +60,13 @@ defmodule TrmnlWeb.DashboardLive do
       when type in ~w(header text agenda week month today_tomorrow dinner reminders countdowns family_note) do
     {w, h} =
       case type do
-        "week" -> {20, 6}
-        "month" -> {10, 8}
-        "agenda" -> {10, 6}
-        "today_tomorrow" -> {10, 8}
-        kind when kind in ~w(dinner reminders countdowns family_note) -> {10, 4}
-        _ -> {10, 2}
+        "week" -> {20, 4}
+        "month" -> {10, 6}
+        "agenda" -> {8, 4}
+        "today_tomorrow" -> {8, 3}
+        kind when kind in ~w(dinner reminders countdowns family_note) -> {6, 3}
+        "header" -> {8, 2}
+        _ -> {6, 2}
       end
 
     candidate =
@@ -82,9 +83,9 @@ defmodule TrmnlWeb.DashboardLive do
               "header" => "Dzisiaj",
               "text" => "Notatka",
               "agenda" => "Plan dnia",
-              "week" => "Ten tydzień",
+              "week" => "Najbliższe 7 dni",
               "month" => "Miesiąc",
-              "today_tomorrow" => "3 zadania na dziś",
+              "today_tomorrow" => "Lista zadań",
               "dinner" => "Plan posiłków",
               "reminders" => "Obowiązki domowe",
               "countdowns" => "Odliczanie",
@@ -92,7 +93,7 @@ defmodule TrmnlWeb.DashboardLive do
             }[type],
           "text" => "",
           "calendars" => Enum.map(socket.assigns.calendars, &elem(&1, 0)),
-          "font_size" => if(type == "week", do: 16, else: 18),
+          "font_size" => 14,
           "days" => 7
         }
       end
@@ -195,6 +196,23 @@ defmodule TrmnlWeb.DashboardLive do
 
       {:error, _} ->
         {:noreply, assign(socket, notice: "Nieprawidłowy wybór kalendarzy.")}
+    end
+  end
+
+  def handle_event("disconnect-account", %{"account" => id}, socket) do
+    case Calendars.disconnect(id) do
+      {:ok, :ok} ->
+        {:noreply,
+         socket
+         |> assign(
+           notice: "Odłączono konto. Odświeżenie ekranu w kolejce.",
+           preview: nil,
+           preview_layout: nil
+         )
+         |> status()}
+
+      {:error, _} ->
+        {:noreply, assign(socket, notice: "Nie udało się odłączyć konta. Spróbuj ponownie.")}
     end
   end
 
@@ -482,6 +500,8 @@ defmodule TrmnlWeb.DashboardLive do
                     "h" => "Wysokość"
                   }[key]}<input
                     aria-label={key}
+                    min={if key in ~w(w h), do: 1, else: 0}
+                    max={if key in ~w(x w), do: 20, else: 12}
                     type="number"
                     name={"block[#{key}]"}
                     value={@block_form[key].value}
@@ -528,7 +548,7 @@ defmodule TrmnlWeb.DashboardLive do
                   Czas z momentu generowania obrazu · ±5 min przy działającym połączeniu. TRMNL pobiera ekran z zegarem co 4 minuty.
                 </p>
                 <label>Rozmiar tekstu<select name="block[font_size]"><option
-                  :for={n <- [16, 18, 20, 24]}
+                  :for={n <- [12, 14, 16, 18, 20, 24]}
                   value={n}
                   selected={@block["font_size"] == n}
                 >
@@ -645,6 +665,14 @@ defmodule TrmnlWeb.DashboardLive do
                 >
                   {a.error}
                 </p><button>Zapisz kalendarze</button>
+                <button
+                  id={"disconnect-account-#{a.id}"}
+                  type="button"
+                  class="danger"
+                  phx-click="disconnect-account"
+                  phx-value-account={a.id}
+                  data-confirm={"Odłączyć konto #{a.label}? Kalendarze i wydarzenia w Google pozostaną bez zmian."}
+                >Odłącz konto</button>
               </form>
               <button id="sync" phx-click="sync">Synchronizuj teraz / ponów</button>
             </section>

@@ -4,25 +4,18 @@ defmodule Trmnl.FamilyTest do
   alias Trmnl.{Family, FamilySchedule, Publication, RefreshWorker}
   import Trmnl.Fixtures
 
-  test "daily tasks allow three slots per date including completed tasks, edits and moves" do
+  test "legacy dated todos allow more than three per date, edits, moves and completion undo" do
     tasks =
-      for n <- 1..3 do
-        {:ok, item} =
-          Family.create("today_tomorrow", %{"title" => "Task #{n}", "date" => "2026-09-25"})
+      for n <- 1..5 do
+        assert {:ok, item} =
+                 Family.create("today_tomorrow", %{"title" => "Task #{n}", "date" => "2026-09-25"})
 
         item
       end
 
-    assert {:error, cs} =
-             Family.create("today_tomorrow", %{"title" => "Fourth", "date" => "2026-09-25"})
-
-    assert errors_on(cs).date
+    assert length(Family.list("today_tomorrow")) == 5
     {:ok, done} = Family.complete(hd(tasks))
     assert done.completed_on
-
-    assert {:error, _} =
-             Family.create("today_tomorrow", %{"title" => "Still fourth", "date" => "2026-09-25"})
-
     assert {:ok, edited} = Family.update(done, %{"title" => "Changed"})
     assert {:ok, restored} = Family.restore(edited)
     refute restored.completed_on
@@ -30,9 +23,36 @@ defmodule Trmnl.FamilyTest do
     {:ok, tomorrow} =
       Family.create("today_tomorrow", %{"title" => "Tomorrow", "date" => "2026-09-26"})
 
-    assert {:error, _} = Family.update(tomorrow, %{"date" => "2026-09-25"})
+    assert {:ok, moved} = Family.update(tomorrow, %{"date" => "2026-09-25"})
+    assert moved.date == ~D[2026-09-25]
     assert {:ok, _} = Family.delete(restored)
-    assert {:ok, _} = Family.update(tomorrow, %{"date" => "2026-09-25"})
+  end
+
+  test "completing a todo promotes the next one and undo restores its place" do
+    tasks =
+      for n <- 1..4 do
+        assert {:ok, task} = Family.create("today_tomorrow", %{"title" => "Todo #{n}"})
+        assert is_nil(task.date)
+        task
+      end
+
+    render_titles = fn ->
+      Trmnl.FamilyHTML.render("today_tomorrow", Family.snapshot(), ~D[2026-09-27], 7, [])
+      |> LazyHTML.from_fragment()
+      |> LazyHTML.query(".event")
+      |> Enum.map(&(LazyHTML.text(&1) |> String.trim()))
+    end
+
+    assert render_titles.() == ["☐ Todo 1", "☐ Todo 2", "☐ Todo 3"]
+    assert {:ok, done} = Family.complete(hd(tasks), ~D[2026-09-27])
+    assert done.completed_on == ~D[2026-09-27]
+    assert render_titles.() == ["☐ Todo 2", "☐ Todo 3", "☐ Todo 4"]
+    assert List.last(Family.list("today_tomorrow")).id == done.id
+    assert {:ok, _} = Family.restore(done)
+    assert render_titles.() == ["☐ Todo 1", "☐ Todo 2", "☐ Todo 3"]
+
+    for task <- Family.list("today_tomorrow"), do: Family.complete(task)
+    assert render_titles.() == []
   end
 
   test "each content module persists independently of draft and published layout" do

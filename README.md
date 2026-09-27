@@ -7,7 +7,7 @@ Defaults are Polish, Europe/Warsaw, Monday-first weeks and 24-hour time. Calenda
 ## Features
 
 - Connect multiple Google accounts and choose which calendars appear on each block.
-- Manage daily tasks, meals, household chores, countdowns and family notes.
+- Manage todos, meals, household chores, countdowns and family notes.
 - Drag and resize blocks, save a draft, and preview the screen before publishing.
 - Serve the last successful image to your TRMNL while synchronization or rendering recovers from a failure.
 - Run Phoenix LiveView, PostgreSQL and the Chromium renderer together with Docker Compose.
@@ -78,7 +78,7 @@ Manage each module in **Treść rodzinna** without opening the layout editor:
 
 | Module | Content controls |
 | --- | --- |
-| 3 zadania na dziś | Up to three tasks per date, with person, details, complete and undo. The screen shows only today’s tasks, including completed ones. |
+| Lista zadań | An undated todo list with person, details, complete and undo. The screen shows the first three unfinished tasks in creation order; completing one brings in the next. |
 | Plan posiłków | Meals on any date, optional serving time, cook and notes. |
 | Obowiązki domowe | Undated or dated chores, responsible person, priority, daily/weekly repetition, complete and undo. |
 | Odliczanie | Upcoming dates and annual anniversaries, with days remaining. |

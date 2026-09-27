@@ -37,7 +37,7 @@ defmodule Trmnl.FamilyScheduleTest do
     assert FamilySchedule.active_note?(%FamilyItem{}, ~D[2026-09-24])
   end
 
-  test "daily tasks show only today, keep completed tasks and ignore Google calendars" do
+  test "todo block hides completed tasks and ignores Google calendars" do
     layout = %{
       "blocks" => [
         block(%{
@@ -69,14 +69,42 @@ defmodule Trmnl.FamilyScheduleTest do
     ]
 
     html = ScreenHTML.render(layout, events, ~U[2026-03-28 23:30:00Z], items)
-    assert html =~ "3 zadania na dziś"
-    assert html =~ "1/3 wykonane"
-    assert html =~ "☑"
+    assert html =~ "Lista zadań"
+    refute html =~ "☑"
     assert html =~ "☐"
-    assert html =~ "Zrobione"
+    refute html =~ "Zrobione"
     assert html =~ "Tata"
-    refute html =~ "Jutrzejsze"
+    assert html =~ "Jutrzejsze"
     refute html =~ "Zażółć gęślą jaźń"
+  end
+
+  test "todo queue shows the first three unfinished entries regardless of date" do
+    items = [
+      %FamilyItem{id: 5, kind: "today_tomorrow", title: "Fifth"},
+      %FamilyItem{id: 2, kind: "today_tomorrow", title: "Second", date: ~D[2027-02-01]},
+      %FamilyItem{id: 1, kind: "today_tomorrow", title: "Done", completed_on: ~D[2026-12-30]},
+      %FamilyItem{id: 4, kind: "today_tomorrow", title: "Fourth", date: ~D[2026-01-01]},
+      %FamilyItem{id: 3, kind: "today_tomorrow", title: "Third"},
+      %FamilyItem{id: 0, kind: "reminders", title: "Other module"}
+    ]
+
+    rows =
+      FamilyHTML.render("today_tomorrow", items, ~D[2026-12-30], 7, [])
+      |> LazyHTML.from_fragment()
+      |> LazyHTML.query(".event")
+      |> Enum.map(&LazyHTML.text/1)
+
+    assert Enum.map(rows, &String.trim/1) == ["☐ Second", "☐ Third", "☐ Fourth"]
+  end
+
+  test "todo titles upgrade old defaults and preserve custom titles" do
+    for title <- ["Dzisiaj + jutro", "3 zadania na dziś", "Zadania na tydzień", "Moje zadania"] do
+      layout = %{"blocks" => [block(%{"type" => "today_tomorrow", "title" => title})]}
+      [upgraded] = Trmnl.Layout.upgrade(layout)["blocks"]
+
+      assert upgraded["title"] ==
+               if(title == "Moje zadania", do: title, else: "Lista zadań")
+    end
   end
 
   test "meals, countdowns, reminders and notes filter, prioritize and escape content" do

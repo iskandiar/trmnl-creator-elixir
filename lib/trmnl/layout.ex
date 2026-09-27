@@ -4,9 +4,10 @@ defmodule Trmnl.Layout do
   def upgrade(layout) do
     Map.update!(layout, "blocks", fn blocks ->
       Enum.map(blocks, fn b ->
-        if b["type"] == "today_tomorrow" and b["title"] == "Dzisiaj + jutro",
-          do: Map.put(b, "title", "3 zadania na dziś"),
-          else: b
+        if b["type"] == "today_tomorrow" and
+             b["title"] in ["Dzisiaj + jutro", "3 zadania na dziś", "Zadania na tydzień"],
+           do: Map.put(b, "title", "Lista zadań"),
+           else: b
       end)
     end)
   end
@@ -36,10 +37,8 @@ defmodule Trmnl.Layout do
   defp valid_block?(b) when is_map(b) do
     b["type"] in @types and is_binary(b["id"]) and
       Enum.all?(~w(x y w h), &is_integer(b[&1])) and
-      b["x"] >= 0 and b["y"] >= 0 and b["w"] >= 2 and b["h"] >= 1 and
+      b["x"] >= 0 and b["y"] >= 0 and b["w"] >= 1 and b["h"] >= 1 and
       b["x"] + b["w"] <= 20 and b["y"] + b["h"] <= 12 and
-      (b["type"] != "week" or (b["w"] >= 14 and b["h"] >= 3)) and
-      (b["type"] != "month" or (b["w"] >= 10 and b["h"] >= 6)) and
       Map.get(b, "appearance", "classic") in ~w(classic minimal contrast) and
       Map.get(b, "density", "compact") in ~w(compact comfortable) and
       Map.get(b, "calendar_style", "list") in ~w(list grouped rows) and
@@ -47,7 +46,7 @@ defmodule Trmnl.Layout do
       is_binary(Map.get(b, "title", "")) and byte_size(Map.get(b, "title", "")) <= 100 and
       is_list(Map.get(b, "calendars", [])) and
       Enum.all?(Map.get(b, "calendars", []), &is_binary/1) and
-      Map.get(b, "font_size", 18) in [16, 18, 20, 24] and Map.get(b, "days", 7) in 1..30
+      Map.get(b, "font_size", 18) in [12, 14, 16, 18, 20, 24] and Map.get(b, "days", 7) in 1..30
   end
 
   defp valid_block?(_), do: false

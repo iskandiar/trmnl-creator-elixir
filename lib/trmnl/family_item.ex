@@ -71,7 +71,7 @@ defmodule Trmnl.FamilyItem do
     cs = validate_inclusion(cs, :repeat, repeats)
 
     cs =
-      if kind in ~w(today_tomorrow dinner countdowns) or get_field(cs, :repeat) != "none",
+      if kind in ~w(dinner countdowns) or get_field(cs, :repeat) != "none",
         do: validate_required(cs, [:date]),
         else: cs
 

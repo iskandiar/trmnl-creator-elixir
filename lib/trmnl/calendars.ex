@@ -48,6 +48,21 @@ defmodule Trmnl.Calendars do
     end
   end
 
+  def disconnect(id) do
+    with {:ok, account_id} <- Ecto.Type.cast(:id, id) do
+      Repo.transaction(fn ->
+        Repo.delete_all(from a in Account, where: a.id == ^account_id)
+
+        case Oban.insert(Trmnl.RefreshWorker.new(%{})) do
+          {:ok, _} -> :ok
+          {:error, reason} -> Repo.rollback(reason)
+        end
+      end)
+    else
+      _ -> {:error, :invalid_account}
+    end
+  end
+
   def sync_all do
     results = Enum.map(accounts(), &sync/1)
     Trmnl.Publication.refresh()

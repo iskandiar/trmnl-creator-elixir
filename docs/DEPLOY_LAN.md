@@ -35,7 +35,7 @@ W LAN zaufanym przez domowników można używać HTTP. Jeśli sieć jest współ
 ## Pierwsze uruchomienie
 
 1. Otwórz `PUBLIC_URL`, zaloguj się wygenerowanym hasłem.
-2. Dodaj dane w **Treść rodzinna**. **3 zadania na dziś** ma limit trzech wpisów na datę, także wykonanych.
+2. Dodaj dane w **Treść rodzinna**. **Lista zadań** pokazuje pierwsze 3 niewykonane zadania w kolejności dodania, bez wybierania daty. Wykonanie zadania odsłania kolejne z listy.
 3. W **Układ ekranu** dodaj bloki, ustaw wygląd i sprawdź Podgląd. Zapis szkicu nie zmienia urządzenia; **Publikuj na TRMNL** aktywuje obraz.
 4. Połącz Google Calendar zgodnie z [instrukcją Google](GOOGLE_SETUP.md). Dla domowego serwera użyj callbacku localhost przez tunel SSH; muszą się zgadzać `GOOGLE_BROWSER_ORIGIN`, `GOOGLE_REDIRECT_URI` i adres dozwolony w Google Cloud. Dane OAuth dodaj do `.env`, nigdy do plików źródłowych.
 5. W **Kalendarze i urządzenie** otwórz parowanie dla MAC urządzenia. W konfiguracji BYOS urządzenia podaj `PUBLIC_URL`. Okno parowania trwa 10 minut.

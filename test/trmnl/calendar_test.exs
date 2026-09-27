@@ -1,5 +1,6 @@
 defmodule Trmnl.CalendarTest do
   use Trmnl.DataCase
+  use Oban.Testing, repo: Trmnl.Repo
   alias Trmnl.{Calendars, Crypto, Google}
   import Trmnl.Fixtures
 
@@ -10,6 +11,28 @@ defmodule Trmnl.CalendarTest do
     end)
 
     :ok
+  end
+
+  test "disconnect removes credentials and cached events only for the chosen account and refreshes" do
+    removed = account()
+    retained = account("two@example.com")
+    assert :ok = Calendars.sync(removed)
+    assert :ok = Calendars.sync(retained)
+    retained_account = Repo.get!(Trmnl.Account, retained.id)
+
+    assert {:ok, :ok} = Calendars.disconnect(to_string(removed.id))
+    assert is_nil(Repo.get(Trmnl.Account, removed.id))
+    assert Calendars.accounts() == [retained_account]
+    assert Calendars.events() == retained_account.events
+
+    refute Enum.any?(Calendars.options(), fn {key, _} ->
+             String.starts_with?(key, "#{removed.id}:")
+           end)
+
+    assert_enqueued(worker: Trmnl.RefreshWorker)
+    assert {:ok, :ok} = Calendars.disconnect(removed.id)
+    assert {:error, :invalid_account} = Calendars.disconnect("invalid")
+    assert Calendars.accounts() == [retained_account]
   end
 
   test "multiple accounts, cancelled instances and failed sync preserving the snapshot" do

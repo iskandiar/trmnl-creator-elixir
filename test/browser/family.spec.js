@@ -26,7 +26,9 @@ test('independent family modules, content refresh and preserved layout draft', a
       await expect(page.locator('.family-row')).toHaveCount(count-1);
     }
     await page.locator('[name="family[title]"]').fill(title);
-    await page.locator('[name="family[date]"]').fill(today);
+    if (await page.locator('[name="family[date]"]').count()) {
+      await page.locator('[name="family[date]"]').fill(today);
+    }
     if (time) await page.locator('[name="family[time]"]').fill(time);
     await page.locator('[name="family[owner]"]').fill(owner);
     await page.locator('[name="family[body]"]').fill(body);
@@ -39,15 +41,17 @@ test('independent family modules, content refresh and preserved layout draft', a
   await expect(page.locator('#module-today_tomorrow')).toHaveAttribute('aria-pressed','true');
   for (const title of ['Podlać kwiaty', 'Wynieść śmieci']) {
     await page.locator('[name="family[title]"]').fill(title);
-    await page.locator('[name="family[date]"]').fill(today);
+    if (await page.locator('[name="family[date]"]').count()) {
+      await page.locator('[name="family[date]"]').fill(today);
+    }
     await page.locator('#family-save').click();
     await expect(page.locator('[name="family[title]"]')).toHaveValue('');
   }
   await expect(page.locator('.family-row')).toHaveCount(3);
   await page.locator('[name="family[title]"]').fill('Czwarte zadanie');
   await page.locator('#family-save').click();
-  await expect(page.locator('#family-form .error')).toContainText('3 zadania');
-  await expect(page.locator('.family-row')).toHaveCount(3);
+  await expect(page.locator('#family-form .error')).toHaveCount(0);
+  await expect(page.locator('.family-row')).toHaveCount(4);
   await page.locator('[id^=complete-]').first().click();
   await expect(page.locator('[id^=restore-]')).toHaveCount(1);
   await page.locator('#module-reminders').click();

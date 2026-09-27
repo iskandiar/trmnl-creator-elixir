@@ -2,7 +2,7 @@ defmodule Trmnl.LayoutTest do
   use ExUnit.Case, async: true
   import Trmnl.Fixtures
 
-  test "bounds, overlaps, duplicate ids, week minimum and malformed inputs are rejected" do
+  test "bounds, overlaps, duplicate ids, zero sizes and malformed inputs are rejected" do
     assert {:ok, _} =
              Trmnl.Layout.validate(%{"blocks" => [block(), block(%{"id" => "two", "x" => 10})]})
 
@@ -10,7 +10,7 @@ defmodule Trmnl.LayoutTest do
           block(%{"x" => -1}),
           block(%{"w" => 21}),
           block(%{"h" => 0}),
-          block(%{"type" => "week"}),
+          block(%{"w" => 0}),
           block(%{"font_size" => 2}),
           block(%{"x" => "zero"})
         ] do
@@ -21,6 +21,15 @@ defmodule Trmnl.LayoutTest do
              Trmnl.Layout.validate(%{"blocks" => [block(), block(%{"id" => "two", "x" => 9})]})
 
     assert {:error, _} = Trmnl.Layout.validate(%{"blocks" => [block(), block(%{"x" => 10})]})
+  end
+
+  test "all block types support one-cell sizes and smaller text" do
+    for kind <-
+          ~w(agenda week month header text today_tomorrow dinner reminders countdowns family_note),
+        font <- [12, 14] do
+      layout = %{"blocks" => [block(%{"type" => kind, "w" => 1, "h" => 1, "font_size" => font})]}
+      assert {:ok, ^layout} = Trmnl.Layout.validate(layout)
+    end
   end
 
   test "Warsaw DST, exclusive all-day end and overnight events" do
@@ -44,7 +53,7 @@ defmodule Trmnl.LayoutTest do
     refute Trmnl.ScreenHTML.occurs?(e, ~D[2026-03-29])
   end
 
-  test "screen escapes user content and uses seven Monday-first columns" do
+  test "screen escapes user content and uses seven columns starting today" do
     html =
       Trmnl.ScreenHTML.render(
         %{"blocks" => [block(%{"type" => "week", "w" => 20, "title" => "<script>bad</script>"})]},
@@ -53,8 +62,9 @@ defmodule Trmnl.LayoutTest do
       )
 
     assert html =~ "&lt;script&gt;"
-    assert html =~ "Pon 23.03"
+    refute html =~ "Pon 23.03"
     assert html =~ "Nd 29.03"
+    assert html =~ "Sob 04.04"
     assert length(Regex.scan(~r/class=day/, html)) == 7
   end
 end

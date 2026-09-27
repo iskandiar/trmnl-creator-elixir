@@ -5,7 +5,7 @@ defmodule Trmnl.Family do
 
   def labels,
     do: [
-      {"today_tomorrow", "3 zadania na dziś"},
+      {"today_tomorrow", "Lista zadań"},
       {"dinner", "Plan posiłków"},
       {"reminders", "Obowiązki domowe"},
       {"countdowns", "Odliczanie"},
@@ -14,6 +14,14 @@ defmodule Trmnl.Family do
 
   def label(kind),
     do: labels() |> Enum.find_value(fn {key, label} -> if key == kind, do: label end)
+
+  def list("today_tomorrow") do
+    Repo.all(
+      from i in FamilyItem,
+        where: i.kind == "today_tomorrow",
+        order_by: [asc: not is_nil(i.completed_on), asc: i.id]
+    )
+  end
 
   def list(kind),
     do:
@@ -29,19 +37,19 @@ defmodule Trmnl.Family do
   def new(kind),
     do: %FamilyItem{
       kind: kind,
-      date: if(kind in ~w(today_tomorrow dinner countdowns), do: FamilySchedule.today())
+      date: if(kind in ~w(dinner countdowns), do: FamilySchedule.today())
     }
 
   def change(item, attrs \\ %{}), do: FamilyItem.changeset(item, attrs)
 
   def create(kind, attrs)
       when kind in ~w(today_tomorrow dinner reminders countdowns family_note) do
-    persist(fn -> Repo.insert(daily_limit(change(%FamilyItem{kind: kind}, attrs))) end)
+    persist(fn -> Repo.insert(change(%FamilyItem{kind: kind}, attrs)) end)
   end
 
   def update(%FamilyItem{} = item, attrs) do
     persist(fn ->
-      Repo.update(daily_limit(change(item, attrs)),
+      Repo.update(change(item, attrs),
         stale_error_field: :lock_version,
         stale_error_message: "changed in another tab; reopen the item"
       )
@@ -83,34 +91,6 @@ defmodule Trmnl.Family do
         stale_error_field: :lock_version
       )
     end)
-  end
-
-  # The transaction lock also protects the three-slot limit across dashboard tabs.
-  defp daily_limit(cs) do
-    date = Ecto.Changeset.get_field(cs, :date)
-
-    if cs.valid? and Ecto.Changeset.get_field(cs, :kind) == "today_tomorrow" and date do
-      id = cs.data.id || 0
-
-      count =
-        Repo.aggregate(
-          from(i in FamilyItem,
-            where: i.kind == "today_tomorrow" and i.date == ^date and i.id != ^id
-          ),
-          :count
-        )
-
-      if count >= 3,
-        do:
-          Ecto.Changeset.add_error(
-            cs,
-            :date,
-            "Na ten dzień są już 3 zadania. Edytuj lub usuń jedno z nich."
-          ),
-        else: cs
-    else
-      cs
-    end
   end
 
   defp persist(fun) do

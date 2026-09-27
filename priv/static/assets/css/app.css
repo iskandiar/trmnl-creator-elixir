@@ -14,6 +14,18 @@
 .lower-grid{gap:16px;margin:0 0 16px}.account{padding:12px 0}.preview{margin-top:16px}
 .preview img{max-width:100%;height:auto}.grid-block{padding:7px}.block-type{margin-bottom:4px}
 .row-actions button{min-height:36px}.family-row[data-completed=true]>div:first-child>strong{text-decoration:line-through}
+/* Dense desktop editor with compact block labels. */
+.topbar{height:46px}main{padding:12px 16px}.intro{margin-bottom:10px}h1{font-size:26px}
+h2{font-size:15px;margin-bottom:10px}.dashboard-tabs{margin-bottom:10px;padding-bottom:4px}
+.editor-panel,.inspector,.panel{padding:10px}.workspace{gap:10px}.panel-heading{margin-bottom:8px}
+.toolbar{gap:4px;margin-bottom:8px}.toolbar button{font-size:12px;padding:5px 8px}
+.actions{gap:6px;margin-top:8px}.actions button{padding:7px 10px}.inspector label{margin:8px 0}
+.inspector input,.inspector select{padding:6px;margin-top:3px}.inspector fieldset{margin:10px 0}
+.grid-block{padding:4px}.grid-block strong{display:block;font-size:14px;line-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.block-type{font-size:9px;line-height:11px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grid-block p{margin:3px 0;font-size:11px}.grid-block[data-h="1"] .block-type,.grid-block[data-h="1"] p{display:none}
+.resize{right:0;bottom:0;width:24px;height:24px;text-align:right;line-height:24px}
+.preview{margin-top:10px}.module-tabs{gap:5px;margin-bottom:10px}.family-columns{gap:10px}
 @media(max-width:1190px){.workspace{grid-template-columns:minmax(0,1fr)}.inspector{max-width:none}.inspector .geometry{max-width:440px}}
 @media(max-width:800px){.family-columns{grid-template-columns:minmax(0,1fr)}.lower-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){main{padding:12px}.topbar{padding:0 16px}.brand span{margin-left:8px;padding-left:8px}.intro h1{font-size:25px}.status{margin-top:8px;max-width:none}

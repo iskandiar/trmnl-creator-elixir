@@ -41,7 +41,7 @@ const Grid = {
     if (!d?.moved) return;
     d.block.classList.add("dragging");
     if (d.resize) {
-      d.block.style.width = `${Math.max(80,d.original.w*40+d.dx)}px`;
+      d.block.style.width = `${Math.max(40,d.original.w*40+d.dx)}px`;
       d.block.style.height = `${Math.max(40,d.original.h*40+d.dy)}px`;
     } else {
       d.block.style.transform = `translate(${d.dx}px,${d.dy}px)`;
@@ -55,7 +55,7 @@ const Grid = {
     if (!d.moved) return;
     this.suppressClick = true;
     // Keep the snapped position visible while the server validates it.
-    const value = {...d.original, ...(d.resize ? {w:d.original.w+dx,h:d.original.h+dy} : {x:d.original.x+dx,y:d.original.y+dy})};
+    const value = {...d.original, ...(d.resize ? {w:Math.max(1,d.original.w+dx),h:Math.max(1,d.original.h+dy)} : {x:d.original.x+dx,y:d.original.y+dy})};
     this.pending = {block:d.block, value};
     paint(d.block, value);
     this.pushEvent("geometry", {id:d.block.dataset.block, ...value}, reply => {

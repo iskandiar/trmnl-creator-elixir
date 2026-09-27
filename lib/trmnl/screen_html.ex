@@ -17,6 +17,12 @@ defmodule Trmnl.ScreenHTML do
     .overflow{position:absolute;bottom:0;right:4px;background:white;border-top:1px solid black;font-size:14px;font-weight:bold;display:none;padding:1px 5px}
     h3{font-size:inherit;margin:6px 0 3px}.family-owner{font-weight:bold}
     p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+    .compact{padding:3px}.compact h2{font-size:14px;line-height:17px;margin-bottom:2px}
+    .compact .content{height:calc(100% - 19px);line-height:1.1}.compact .event{padding:1px 0}
+    .compact h3{margin:3px 0 1px}.compact .week{gap:2px}.compact .day{padding-right:2px}
+    .compact .day strong{font-size:12px}.compact .day-empty{font-size:12px}
+    .compact .week-rows .day{grid-template-columns:72px minmax(0,1fr);gap:3px;padding:1px 0}
+    .compact .clock-date{font-size:12px}.compact .clock-time{font-size:20px}.compact .clock-time small{font-size:10px}
     .comfortable{padding:8px}.comfortable .event{padding:4px 0}.comfortable .content{line-height:1.3}
     .minimal{border-color:transparent;border-top:1px solid black}.minimal .event{border:0}
     .contrast h2{background:black;color:white;padding:0 4px}

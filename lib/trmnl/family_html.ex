@@ -1,23 +1,13 @@
 defmodule Trmnl.FamilyHTML do
   alias Trmnl.FamilySchedule
 
-  def render("today_tomorrow", items, today, _days, _events) do
-    tasks =
-      items
-      |> Enum.filter(&(&1.kind == "today_tomorrow" and &1.date == today))
-      |> Enum.sort_by(& &1.id)
-      |> Enum.take(3)
-
-    done = Enum.count(tasks, & &1.completed_on)
-
-    rows =
-      Enum.map_join(tasks, fn item ->
-        mark = if item.completed_on, do: "☑", else: "☐"
-        row(mark, item)
-      end)
-
-    "<h3>#{format_date(today)} · #{done}/3 wykonane</h3>" <>
-      empty(rows, "Dodaj do 3 zadań na dziś w panelu rodzinnym.")
+  def render("today_tomorrow", items, _today, _days, _events) do
+    items
+    |> Enum.filter(&(&1.kind == "today_tomorrow" and is_nil(&1.completed_on)))
+    |> Enum.sort_by(& &1.id)
+    |> Enum.take(3)
+    |> Enum.map_join(&row("☐", &1))
+    |> empty("Wszystko zrobione! Dodaj zadania w panelu rodzinnym.")
   end
 
   def render("dinner", items, today, days, _) do

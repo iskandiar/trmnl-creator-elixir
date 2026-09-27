@@ -2,6 +2,47 @@ defmodule TrmnlWeb.DashboardLiveTest do
   use TrmnlWeb.ConnCase
   import Phoenix.LiveViewTest
 
+  test "small blocks and 12px text can be configured, saved and reopened", %{conn: conn} do
+    conn = init_test_session(conn, admin: TrmnlWeb.Auth.issue())
+    {:ok, view, _} = live(conn, "/")
+    view |> element("#add-week") |> render_click()
+
+    view
+    |> element("form[id^=configure]")
+    |> render_submit(%{
+      "block" => %{"x" => "0", "y" => "0", "w" => "1", "h" => "1", "font_size" => "12"}
+    })
+
+    assert has_element?(view, ".grid-block[data-w='1'][data-h='1']")
+    view |> element("#save") |> render_click()
+    {:ok, reopened, _} = live(conn, "/")
+    assert has_element?(reopened, ".grid-block[data-w='1'][data-h='1']")
+    reopened |> element(".grid-block") |> render_click()
+    assert has_element?(reopened, "select[name='block[font_size]'] option[value='12'][selected]")
+  end
+
+  test "disconnecting an account removes it from settings and calendar choices", %{conn: conn} do
+    removed = Trmnl.Fixtures.account()
+    retained = Trmnl.Fixtures.account("two@example.com")
+    {:ok, view, _} = conn |> init_test_session(admin: TrmnlWeb.Auth.issue()) |> live("/")
+
+    view |> element("#tab-settings") |> render_click()
+    assert has_element?(view, "#disconnect-account-#{removed.id}[type=button][data-confirm]")
+    view |> element("#disconnect-account-#{removed.id}") |> render_click()
+    refute has_element?(view, "#account-#{removed.id}")
+    assert has_element?(view, "#account-#{retained.id}")
+
+    view |> element("#tab-layout") |> render_click()
+    view |> element("#add-agenda") |> render_click()
+    refute has_element?(view, "input[name='block[calendars][]'][value='#{removed.id}:primary']")
+    assert has_element?(view, "input[name='block[calendars][]'][value='#{retained.id}:primary']")
+
+    view |> element("#tab-settings") |> render_click()
+    view |> element("#disconnect-account-#{retained.id}") |> render_click()
+    refute has_element?(view, "#account-#{retained.id}")
+    assert Trmnl.Calendars.accounts() == []
+  end
+
   test "dashboard requires auth; password login creates a session", %{conn: conn} do
     assert conn |> get("/") |> redirected_to() == "/login"
     assert conn |> post("/login", password: "wrong") |> response(401)

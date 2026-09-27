@@ -50,6 +50,6 @@ defmodule Trmnl.CalendarAppearanceTest do
     end
 
     assert {:error, _} = Layout.validate(%{"blocks" => [block(%{"appearance" => "<script>"})]})
-    assert {:error, _} = Layout.validate(%{"blocks" => [block(%{"type" => "month", "h" => 2})]})
+    assert {:error, _} = Layout.validate(%{"blocks" => [block(%{"type" => "month", "h" => 0})]})
   end
 end

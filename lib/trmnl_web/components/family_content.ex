@@ -49,10 +49,11 @@ defmodule TrmnlWeb.FamilyContent do
               <.field field={@form[:title]} label={title_label(@kind)} required maxlength="120" />
               <div class="form-grid">
                 <.field
+                  :if={@kind != "today_tomorrow"}
                   field={@form[:date]}
                   label={date_label(@kind)}
                   type="date"
-                  required={@kind in ~w(today_tomorrow dinner countdowns)}
+                  required={@kind in ~w(dinner countdowns)}
                 />
                 <.field
                   :if={@kind == "dinner"}
@@ -107,7 +108,7 @@ defmodule TrmnlWeb.FamilyContent do
             <h2>{Family.label(@kind)}</h2><span>Treść niezależna od układu</span>
           </div>
           <p :if={@kind == "today_tomorrow"} class="hint">
-            Maksymalnie 3 zadania na dzień, także wykonane. Ekran pokazuje tylko dzisiejsze zadania. Wybierz datę, aby zaplanować kolejne dni.
+            Ekran pokazuje pierwsze 3 niewykonane zadania w kolejności dodania. Po wykonaniu zadania pojawi się kolejne z listy.
           </p>
           <p :if={@empty} id="family-empty" class="muted">
             Jeszcze nic tu nie ma. Dodaj pierwszy wpis — możesz umieścić jego moduł na ekranie w zakładce Układ.
@@ -222,7 +223,7 @@ defmodule TrmnlWeb.FamilyContent do
 
   defp description("today_tomorrow"),
     do:
-      "Wybierz do 3 najważniejszych zadań na wybrany dzień. Odhaczaj wykonane zadania — pozostaną widoczne na ekranie."
+      "Dodawaj zadania do listy bez wybierania daty. Odhaczaj wykonane zadania, aby pokazać na ekranie kolejne."
 
   defp description("dinner"), do: "Zaplanuj posiłki na dowolne dni, dodaj osobę gotującą i uwagi."
 
@@ -238,7 +239,7 @@ defmodule TrmnlWeb.FamilyContent do
       "Wiadomości dla wszystkich. Opcjonalne daty ograniczają czas wyświetlania, a ważność ustala kolejność."
 
   def summary(%{kind: "today_tomorrow"} = item, _today),
-    do: "#{item.date} · #{if item.completed_on, do: "Wykonane", else: "Do zrobienia"}"
+    do: if(item.completed_on, do: "Wykonane", else: "Do zrobienia")
 
   def summary(%{kind: "reminders"} = item, today) do
     case FamilySchedule.due(item, today) do

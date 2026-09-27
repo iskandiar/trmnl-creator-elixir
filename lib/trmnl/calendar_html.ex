@@ -19,11 +19,9 @@ defmodule Trmnl.CalendarHTML do
   end
 
   def render("week", style, events, today, _) do
-    monday = Date.add(today, 1 - Date.day_of_week(today))
-
     days =
       Enum.map_join(0..6, "", fn offset ->
-        date = Date.add(monday, offset)
+        date = Date.add(today, offset)
         rows = events |> Enum.filter(&ScreenHTML.occurs?(&1, date))
 
         content =
