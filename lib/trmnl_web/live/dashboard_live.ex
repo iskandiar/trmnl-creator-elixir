@@ -247,7 +247,7 @@ defmodule TrmnlWeb.DashboardLive do
 
       {:error, :missing_key} ->
         {:noreply,
-         assign(socket, notice: "Skonfiguruj GEMINI_API_KEY lub wybierz import bez AI.")}
+         assign(socket, notice: "Skonfiguruj OPENROUTER_API_KEY lub wybierz import bez AI.")}
 
       _ ->
         {:noreply, assign(socket, notice: "Nieprawidłowe ustawienia importu.")}

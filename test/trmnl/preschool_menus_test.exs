@@ -14,11 +14,11 @@ defmodule Trmnl.PreschoolMenusTest do
   @html File.read!("test/fixtures/preschool_menu.html")
 
   setup do
-    keys = [:menu_source_req_options, :menu_ai_req_options, :gemini_api_key]
+    keys = [:menu_source_req_options, :menu_ai_req_options, :openrouter_api_key]
     previous = Map.new(keys, &{&1, Application.get_env(:trmnl, &1)})
     Application.put_env(:trmnl, :menu_source_req_options, plug: {Req.Test, :menu_source})
     Application.put_env(:trmnl, :menu_ai_req_options, plug: {Req.Test, :menu_ai})
-    Application.put_env(:trmnl, :gemini_api_key, "")
+    Application.put_env(:trmnl, :openrouter_api_key, "")
     Req.Test.stub(:menu_source, &Plug.Conn.send_resp(&1, 200, @html))
 
     on_exit(fn ->
@@ -68,18 +68,23 @@ defmodule Trmnl.PreschoolMenusTest do
   end
 
   test "AI receives only public meal data, validates dates and skips unchanged content" do
-    Application.put_env(:trmnl, :gemini_api_key, "test-key")
-    {:ok, _} = PreschoolMenus.save_settings(%{"mode" => "gemini"})
+    Application.put_env(:trmnl, :openrouter_api_key, "test-key")
+    {:ok, _} = PreschoolMenus.save_settings(%{"mode" => "openrouter"})
     {:ok, days} = PreschoolParser.parse(@html)
     parent = self()
 
     Req.Test.stub(:menu_ai, fn conn ->
-      assert conn.request_path =~ "gemini-2.5-flash-lite:generateContent"
-      assert Plug.Conn.get_req_header(conn, "x-goog-api-key") == ["test-key"]
+      assert conn.host == "openrouter.ai"
+      assert conn.request_path == "/api/v1/chat/completions"
+      assert Plug.Conn.get_req_header(conn, "authorization") == ["Bearer test-key"]
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       request = Jason.decode!(body)
-      [content] = request["contents"]
-      [%{"text" => text}] = content["parts"]
+      assert request["model"] == "openrouter/free"
+      refute Map.has_key?(request, "models")
+      assert request["provider"]["require_parameters"]
+      assert request["response_format"]["type"] == "json_schema"
+      assert request["response_format"]["json_schema"]["strict"]
+      [%{"role" => "system"}, %{"role" => "user", "content" => text}] = request["messages"]
       assert Jason.decode!(text) == days
       send(parent, :ai_called)
       ai_reply(conn, days)
@@ -115,12 +120,13 @@ defmodule Trmnl.PreschoolMenusTest do
     )
 
     assert {:error, message} = PreschoolMenus.sync(true)
+    assert message =~ "429"
     refute message =~ "test-key"
     assert PreschoolMenus.status().days == saved.days
   end
 
   test "scheduled import is opt-in; manual requests deduplicate; AI requires a key" do
-    assert {:error, :missing_key} = PreschoolMenus.save_settings(%{"mode" => "gemini"})
+    assert {:error, :missing_key} = PreschoolMenus.save_settings(%{"mode" => "openrouter"})
     assert {:error, _} = PreschoolMenus.save_settings(%{"mode" => "other"})
     assert {:ok, :disabled} = PreschoolMenus.sync()
     assert :ok = perform_job(PreschoolMenuWorker, %{})
@@ -132,6 +138,63 @@ defmodule Trmnl.PreschoolMenusTest do
     assert length(PreschoolMenus.status().days) == 2
     assert {:ok, _} = PreschoolMenus.save_settings(%{"enabled" => "true"})
     assert {:ok, :unchanged} = PreschoolMenus.sync()
+  end
+
+  test "OpenRouter diagnostics distinguish API failures and invalid output without leaking response data" do
+    assert {:ok, :updated} = PreschoolMenus.sync(true)
+    saved = PreschoolMenus.status().days
+    Application.put_env(:trmnl, :openrouter_api_key, "test-key")
+    {:ok, _} = PreschoolMenus.save_settings(%{"mode" => "openrouter"})
+
+    for status <- [400, 401, 402, 403, 404, 429, 503] do
+      Req.Test.stub(:menu_ai, fn conn ->
+        conn
+        |> Plug.Conn.put_status(status)
+        |> Req.Test.json(%{"error" => %{"message" => "test-key"}})
+      end)
+
+      assert {:error, message} = PreschoolMenus.sync(true)
+      assert message =~ "HTTP #{status}"
+      refute message =~ "test-key"
+      assert PreschoolMenus.status().days == saved
+    end
+
+    for {body, expected} <- [
+          {%{"choices" => [%{"finish_reason" => "length"}]}, "limitu długości"},
+          {%{"choices" => [%{"finish_reason" => "content_filter"}]}, "zablokowało"},
+          {%{
+             "choices" => [
+               %{
+                 "finish_reason" => "stop",
+                 "message" => %{"content" => "not json test-key"}
+               }
+             ]
+           }, "JSON"},
+          {%{"choices" => []}, "nie pasuje"},
+          {%{"error" => %{"code" => 429, "message" => "test-key"}}, "HTTP 429"}
+        ] do
+      Req.Test.stub(:menu_ai, &Req.Test.json(&1, body))
+      assert {:error, message} = PreschoolMenus.sync(true)
+      assert message =~ expected
+      refute message =~ "test-key"
+      assert PreschoolMenus.status().days == saved
+    end
+  end
+
+  test "switching a saved Gemini menu to OpenRouter regenerates unchanged source and retains originals" do
+    assert {:ok, :updated} = PreschoolMenus.sync(true)
+    menu = PreschoolMenus.status()
+    menu |> Ecto.Changeset.change(imported_mode: "gemini") |> Trmnl.Repo.update!()
+    Application.put_env(:trmnl, :openrouter_api_key, "test-key")
+    {:ok, _} = PreschoolMenus.save_settings(%{"mode" => "openrouter"})
+    Req.Test.stub(:menu_ai, &ai_reply(&1, menu.days))
+
+    assert {:ok, :updated} = PreschoolMenus.sync(true)
+    updated = PreschoolMenus.status()
+    assert updated.imported_mode == "openrouter"
+    assert updated.source_hash == menu.source_hash
+    assert Enum.map(updated.days, & &1["original"]) == menu.days
+    assert {:ok, :unchanged} = PreschoolMenus.sync(true)
   end
 
   test "daily display filters actual dates and escapes imported content" do
@@ -168,8 +231,11 @@ defmodule Trmnl.PreschoolMenusTest do
 
   defp ai_reply(conn, days) do
     Req.Test.json(conn, %{
-      "candidates" => [
-        %{"finishReason" => "STOP", "content" => %{"parts" => [%{"text" => Jason.encode!(days)}]}}
+      "choices" => [
+        %{
+          "finish_reason" => "stop",
+          "message" => %{"content" => Jason.encode!(%{"days" => days})}
+        }
       ]
     })
   end

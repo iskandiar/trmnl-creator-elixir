@@ -11,6 +11,13 @@ defmodule TrmnlWeb.DashboardLiveTest do
     assert block["type"] == "preschool"
     view |> element("#open-preschool-settings") |> render_click()
     assert has_element?(view, "#preschool-settings")
+    assert has_element?(view, "#preschool-mode option[value='openrouter']")
+    refute has_element?(view, "#preschool-mode option[value='gemini']")
+
+    assert has_element?(
+             view,
+             "#preschool-ai-status a[href='https://openrouter.ai/settings/keys']"
+           )
 
     view
     |> form("#preschool-import-form", menu: %{mode: "plain", enabled: "true"})

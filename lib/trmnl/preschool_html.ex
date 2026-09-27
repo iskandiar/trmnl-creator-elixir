@@ -64,7 +64,9 @@ defmodule Trmnl.PreschoolHTML do
   end
 
   defp source(menu) do
-    suffix = if menu.imported_mode == "gemini", do: " · skrót AI", else: " · skrót"
+    suffix =
+      if menu.imported_mode in ["gemini", "openrouter"], do: " · skrót AI", else: " · skrót"
+
     stale = if menu.error, do: " · zapisany jadłospis", else: ""
 
     "<small class=preschool-source>Przedszkole 123#{suffix}#{stale} · pełny jadłospis i alergeny na stronie przedszkola</small>"

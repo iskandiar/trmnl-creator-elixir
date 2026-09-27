@@ -23,8 +23,8 @@ defmodule TrmnlWeb.PreschoolSettings do
             <option value="plain" selected={@form[:mode].value == "plain"}>
               Bez AI · bezpłatnie, bez klucza
             </option>
-            <option value="gemini" selected={@form[:mode].value == "gemini"}>
-              Gemini Flash-Lite · krótsze opisy
+            <option value="openrouter" selected={@form[:mode].value == "openrouter"}>
+              OpenRouter · darmowe modele · krótsze opisy
             </option>
           </select>
         </label>
@@ -40,13 +40,13 @@ defmodule TrmnlWeb.PreschoolSettings do
       </.form>
       <p id="preschool-ai-status" class="hint">
         {if @ai_configured,
-          do: "Klucz Gemini jest skonfigurowany.",
+          do: "Klucz OpenRouter jest skonfigurowany.",
           else:
-            "Opcjonalne AI: utwórz klucz w Google AI Studio, ustaw GEMINI_API_KEY w konfiguracji serwera i uruchom aplikację ponownie."}
-        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>
+            "Opcjonalne AI: utwórz klucz w OpenRouter, ustaw OPENROUTER_API_KEY w konfiguracji serwera i uruchom aplikację ponownie."}
+        <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">OpenRouter</a>
       </p>
       <p class="hint">
-        Model: gemini-2.5-flash-lite. Aby korzystać bez opłat, użyj projektu na darmowym planie bez włączania płatnego rozliczania. Obowiązują limity Google. Do AI trafia tylko publiczny jadłospis. Niezmieniona strona nie wywołuje ponownie AI.
+        Model: openrouter/free. Automatycznie wybiera dostępny darmowy model. Obowiązują limity i dostępność OpenRouter; aplikacja nie przełącza się na płatne modele. Do AI trafia tylko publiczny jadłospis. Niezmieniona strona nie wywołuje ponownie AI.
       </p>
       <button id="preschool-import" type="button" phx-click="preschool:import">Pobierz jadłospis teraz</button>
       <p id="preschool-status" class="hint">

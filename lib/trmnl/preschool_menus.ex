@@ -9,9 +9,9 @@ defmodule Trmnl.PreschoolMenus do
       status()
       |> Ecto.Changeset.cast(attrs, [:enabled, :mode])
       |> Ecto.Changeset.validate_required([:mode, :enabled])
-      |> Ecto.Changeset.validate_inclusion(:mode, ["plain", "gemini"])
+      |> Ecto.Changeset.validate_inclusion(:mode, ["plain", "openrouter"])
 
-    if Ecto.Changeset.get_field(changeset, :mode) == "gemini" and not MenuAI.configured?() do
+    if Ecto.Changeset.get_field(changeset, :mode) == "openrouter" and not MenuAI.configured?() do
       {:error, :missing_key}
     else
       Repo.insert_or_update(changeset)
@@ -95,16 +95,46 @@ defmodule Trmnl.PreschoolMenus do
   end
 
   defp extract(rows, "plain"), do: {:ok, rows}
-  defp extract(rows, "gemini"), do: MenuAI.summarize(rows)
+  defp extract(rows, "openrouter"), do: MenuAI.summarize(rows)
 
   defp fail(menu, reason) do
     message =
       case reason do
         :missing_key ->
-          "Brak GEMINI_API_KEY. Wybierz import bez AI lub skonfiguruj klucz."
+          "Brak OPENROUTER_API_KEY. Wybierz import bez AI lub skonfiguruj klucz."
 
         :ai_failed ->
-          "AI nie zwróciło poprawnego jadłospisu. Sprawdź klucz i limit Gemini lub wybierz import bez AI."
+          "Nie udało się przetworzyć odpowiedzi OpenRouter. Spróbuj ponownie lub wybierz import bez AI."
+
+        {:ai_http, 429} ->
+          "OpenRouter: przekroczony limit zapytań lub brak dostępnej kwoty (HTTP 429). Sprawdź limit projektu w OpenRouter i spróbuj później lub wybierz import bez AI."
+
+        {:ai_http, status} when status in [401, 403] ->
+          "OpenRouter: odmowa dostępu (HTTP #{status}). Sprawdź OPENROUTER_API_KEY oraz uprawnienia i ograniczenia klucza w koncie OpenRouter."
+
+        {:ai_http, 400} ->
+          "OpenRouter: odrzucone żądanie (HTTP 400). Sprawdź poprawność OPENROUTER_API_KEY i dostępność API dla projektu."
+
+        {:ai_http, 404} ->
+          "OpenRouter: model lub endpoint jest niedostępny (HTTP 404). Wymagana jest aktualizacja konfiguracji modelu."
+
+        {:ai_http, status} ->
+          "OpenRouter: błąd usługi (HTTP #{status}). Spróbuj ponownie później lub wybierz import bez AI."
+
+        :ai_connection ->
+          "Nie udało się połączyć z OpenRouter lub upłynął czas oczekiwania. Sprawdź połączenie serwera z internetem i spróbuj ponownie."
+
+        :ai_invalid_json ->
+          "OpenRouter zwróciło niepoprawny JSON. Spróbuj ponownie lub wybierz import bez AI."
+
+        :ai_invalid_menu ->
+          "Odpowiedź OpenRouter nie pasuje do jadłospisu: sprawdź kompletność dni i posiłków lub limit 140 znaków na posiłek. Spróbuj ponownie lub wybierz import bez AI."
+
+        :ai_truncated ->
+          "OpenRouter przerwało odpowiedź po osiągnięciu limitu długości. Spróbuj ponownie lub wybierz import bez AI."
+
+        :ai_blocked ->
+          "OpenRouter zablokowało przetwarzanie jadłospisu. Wybierz import bez AI."
 
         :invalid_menu ->
           "Nie rozpoznano pełnego jadłospisu na stronie. Sprawdź źródło."
