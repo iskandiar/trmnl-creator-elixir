@@ -97,12 +97,13 @@ defmodule Trmnl.WeatherTest do
     Req.Test.stub(__MODULE__, &Req.Test.json(&1, payload()))
     result = Weather.forecast(@location, server)
     document = WeatherHTML.render(result, @now) |> LazyHTML.from_fragment()
-    assert document |> LazyHTML.query(".weather-main") |> LazyHTML.text() == "18.5°C Pochmurno"
+    assert document |> LazyHTML.query(".weather-main strong") |> LazyHTML.text() == "18.5°C"
+    assert document |> LazyHTML.query(".weather-condition") |> LazyHTML.text() == "Pochmurno"
     text = LazyHTML.text(document)
-    assert text =~ "27.09 12:00"
+    assert text =~ "Akt. 27.09 12:30"
     assert text =~ "Wiatr 3.2 m/s"
     assert text =~ "Opady 0.4 mm/1 h"
-    assert text =~ "Opady: brak danych"
+    assert document |> LazyHTML.query(".weather-chart") |> LazyHTML.to_html() =~ "polyline"
     assert document |> LazyHTML.query(".weather-source") |> LazyHTML.text() =~ "MET Norway"
     assert WeatherHTML.render(result, ~U[2026-10-01 00:00:00Z]) =~ "niedostępna"
   end

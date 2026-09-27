@@ -101,7 +101,7 @@ Family blocks have the same geometry, title and font controls. Meals and reminde
 
 Add **Pogoda** in the layout editor. Set the title to your town and enter its latitude and longitude (for example, Warsaw: `52.2297`, `21.0122`). Apply, preview and publish. No API key or Google account is required. Each weather block can use a different location.
 
-The block shows forecast temperature (°C), wind (m/s), precipitation for the next hour (mm), and upcoming forecast times in Europe/Warsaw. Missing precipitation is shown as unavailable, not zero. This is forecast data, not live observations.
+The block emphasizes the current hour’s forecast temperature (°C), with wind (m/s) and precipitation for the next hour (mm). A monochrome 24-hour temperature graph shows the upcoming trend, and a separate tomorrow summary shows the minimum and maximum forecast temperatures for the next Europe/Warsaw calendar day. Missing or partial data is labeled explicitly. This is forecast data, not live observations. New blocks default to 400 × 200 px; existing blocks keep their size and can be enlarged for readability.
 
 Data comes from [MET Norway Locationforecast](https://api.met.no/weatherapi/locationforecast/2.0/documentation), the forecast service used by Yr. Requests run on the server with an identifying User-Agent, coordinates limited to four decimal places, and an in-memory cache honoring Expires and Last-Modified headers. Scheduled screen refreshes reuse that cache; failures back off for five minutes and show marked cached forecasts when available, otherwise an unavailable message. The cache resets on application restart.
 
