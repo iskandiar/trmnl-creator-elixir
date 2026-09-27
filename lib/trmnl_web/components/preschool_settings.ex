@@ -24,7 +24,7 @@ defmodule TrmnlWeb.PreschoolSettings do
               Bez AI · bezpłatnie, bez klucza
             </option>
             <option value="openrouter" selected={@form[:mode].value == "openrouter"}>
-              OpenRouter · darmowe modele · krótsze opisy
+              OpenRouter · GPT-4.1 mini · krótsze opisy
             </option>
           </select>
         </label>
@@ -46,7 +46,7 @@ defmodule TrmnlWeb.PreschoolSettings do
         <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">OpenRouter</a>
       </p>
       <p class="hint">
-        Model: openrouter/free. Automatycznie wybiera dostępny darmowy model. Obowiązują limity i dostępność OpenRouter; aplikacja nie przełącza się na płatne modele. Do AI trafia tylko publiczny jadłospis. Niezmieniona strona nie wywołuje ponownie AI.
+        Model: {Trmnl.MenuAI.model()}. Wymaga środków na koncie OpenRouter. Orientacyjny koszt: poniżej 0,01 USD za tygodniowy jadłospis, zależnie od długości. Do AI trafia tylko publiczny jadłospis. Niezmieniona strona i model nie wywołują ponownie AI.
       </p>
       <button id="preschool-import" type="button" phx-click="preschool:import">Pobierz jadłospis teraz</button>
       <p id="preschool-status" class="hint">

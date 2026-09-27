@@ -79,8 +79,8 @@ defmodule Trmnl.PreschoolMenusTest do
       assert Plug.Conn.get_req_header(conn, "authorization") == ["Bearer test-key"]
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       request = Jason.decode!(body)
-      assert request["model"] == "openrouter/free"
-      assert request["reasoning"] == %{"enabled" => false}
+      assert request["model"] == "openai/gpt-4.1-mini"
+      refute Map.has_key?(request, "reasoning")
       assert request["max_tokens"] == 16_384
       refute Map.has_key?(request, "models")
       assert request["provider"]["require_parameters"]
@@ -142,6 +142,48 @@ defmodule Trmnl.PreschoolMenusTest do
     assert {:ok, :unchanged} = PreschoolMenus.sync()
   end
 
+  test "complete AI menus with long descriptions are accepted and shortened only on the display" do
+    Application.put_env(:trmnl, :openrouter_api_key, "test-key")
+    {:ok, _} = PreschoolMenus.save_settings(%{"mode" => "openrouter"})
+    {:ok, days} = PreschoolParser.parse(@html)
+    long_meal = String.duplicate("Zupa jarzynowa i ryż z warzywami. ", 8)
+    summaries = Enum.map(days, &Map.put(&1, "lunch", long_meal))
+    Req.Test.stub(:menu_ai, &ai_reply(&1, summaries))
+
+    assert {:ok, :updated} = PreschoolMenus.sync(true)
+    menu = PreschoolMenus.status()
+    assert hd(menu.days)["lunch"] == String.trim(long_meal)
+    assert hd(menu.days)["original"] == hd(days)
+    doc = menu |> PreschoolHTML.render(~D[2026-09-28], 2) |> LazyHTML.from_fragment()
+    texts = doc |> LazyHTML.query(".preschool-meal p") |> Enum.map(&LazyHTML.text/1)
+    assert Enum.all?(texts, &(String.length(&1) <= 100))
+    assert Enum.any?(texts, &String.ends_with?(&1, "…"))
+  end
+
+  test "AI menu validation identifies invalid dates, meal fields and shapes while retaining the saved menu" do
+    assert {:ok, :updated} = PreschoolMenus.sync(true)
+    saved = PreschoolMenus.status().days
+    Application.put_env(:trmnl, :openrouter_api_key, "test-key")
+    {:ok, _} = PreschoolMenus.save_settings(%{"mode" => "openrouter"})
+
+    for {output, expected} <- [
+          {[hd(saved)], "daty"},
+          {[hd(saved), hd(saved)], "daty"},
+          {Enum.map(saved, &Map.put(&1, "date", "2030-01-01")), "daty"},
+          {Enum.map(saved, &Map.put(&1, "lunch", "   ")), "posiłek"},
+          {Enum.map(saved, &Map.delete(&1, "lunch")), "posiłek"},
+          {Enum.map(saved, &Map.put(&1, "lunch", ["zupa"])), "posiłek"},
+          {Enum.map(saved, &Map.put(&1, "lunch", String.duplicate("a", 5001))), "posiłek"},
+          {[nil, hd(saved)], "struktura"},
+          {%{}, "struktura"}
+        ] do
+      Req.Test.stub(:menu_ai, &ai_reply(&1, output))
+      assert {:error, message} = PreschoolMenus.sync(true)
+      assert message =~ expected
+      assert PreschoolMenus.status().days == saved
+    end
+  end
+
   test "OpenRouter diagnostics distinguish API failures and invalid output without leaking response data" do
     assert {:ok, :updated} = PreschoolMenus.sync(true)
     saved = PreschoolMenus.status().days
@@ -194,7 +236,7 @@ defmodule Trmnl.PreschoolMenusTest do
     assert {:ok, :updated} = PreschoolMenus.sync(true)
     updated = PreschoolMenus.status()
     assert updated.imported_mode == "openrouter"
-    assert updated.source_hash == menu.source_hash
+    refute updated.source_hash == menu.source_hash
     assert Enum.map(updated.days, & &1["original"]) == menu.days
     assert {:ok, :unchanged} = PreschoolMenus.sync(true)
   end

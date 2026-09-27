@@ -1,6 +1,6 @@
 defmodule Trmnl.MenuAI do
   @fields ~w(date breakfast lunch snack)
-  def model, do: "openrouter/free"
+  def model, do: "openai/gpt-4.1-mini"
   def configured?, do: String.trim(Application.get_env(:trmnl, :openrouter_api_key, "")) != ""
 
   def summarize(days) do
@@ -42,8 +42,6 @@ defmodule Trmnl.MenuAI do
           %{role: "user", content: Jason.encode!(days)}
         ],
         temperature: 0,
-        # Free routing may select a reasoning model whose hidden tokens share this budget.
-        reasoning: %{enabled: false},
         max_tokens: 16_384,
         provider: %{require_parameters: true},
         response_format: %{
@@ -81,28 +79,46 @@ defmodule Trmnl.MenuAI do
        )
        when is_binary(text) do
     with {:ok, %{"days" => summaries}} <- Jason.decode(text),
-         true <- valid?(summaries, days) do
-      by_date = Map.new(summaries, &{&1["date"], Map.take(&1, @fields)})
+         :ok <- validate(summaries, days) do
+      by_date =
+        Map.new(summaries, fn summary ->
+          fields = Map.new(@fields, &{&1, String.trim(summary[&1])})
+          {summary["date"], fields}
+        end)
+
       {:ok, Enum.map(days, fn day -> Map.put(by_date[day["date"]], "original", day) end)}
     else
       {:error, %Jason.DecodeError{}} -> {:error, :ai_invalid_json}
-      _ -> {:error, :ai_invalid_menu}
+      {:error, {:ai_invalid_menu, _}} = error -> error
+      _ -> {:error, {:ai_invalid_menu, :shape}}
     end
   end
 
   defp decode(_, _), do: {:error, :ai_invalid_menu}
 
-  defp valid?(summaries, days) when is_list(summaries) do
-    length(summaries) == length(days) and
-      Enum.all?(summaries, fn summary ->
-        is_map(summary) and
-          Enum.all?(@fields, fn field ->
-            value = summary[field]
-            is_binary(value) and String.length(String.trim(value)) in 1..140
-          end)
-      end) and
-      Enum.sort(Enum.map(summaries, & &1["date"])) == Enum.sort(Enum.map(days, & &1["date"]))
+  defp validate(summaries, days) when is_list(summaries) do
+    cond do
+      not Enum.all?(summaries, &is_map/1) ->
+        {:error, {:ai_invalid_menu, :shape}}
+
+      Enum.sort(Enum.map(summaries, & &1["date"])) != Enum.sort(Enum.map(days, & &1["date"])) ->
+        {:error, {:ai_invalid_menu, :dates}}
+
+      not Enum.all?(summaries, &complete_meals?/1) ->
+        {:error, {:ai_invalid_menu, :meals}}
+
+      true ->
+        :ok
+    end
   end
 
-  defp valid?(_, _), do: false
+  defp validate(_, _), do: {:error, {:ai_invalid_menu, :shape}}
+
+  # Display length is handled by PreschoolHTML, not by rejecting a complete menu.
+  defp complete_meals?(summary) do
+    Enum.all?(~w(breakfast lunch snack), fn field ->
+      value = summary[field]
+      is_binary(value) and String.length(String.trim(value)) in 1..5000
+    end)
+  end
 end

@@ -42,7 +42,8 @@ defmodule Trmnl.PreschoolMenus do
 
   defp import_menu(menu) do
     with {:ok, rows} <- fetch() do
-      hash = :crypto.hash(:sha256, Jason.encode!(rows)) |> Base.encode16(case: :lower)
+      input = if menu.mode == "openrouter", do: %{model: MenuAI.model(), days: rows}, else: rows
+      hash = :crypto.hash(:sha256, Jason.encode!(input)) |> Base.encode16(case: :lower)
 
       if menu.source_hash == hash and menu.imported_mode == menu.mode do
         save!(menu, checked_at: now(), error: nil)
@@ -115,6 +116,9 @@ defmodule Trmnl.PreschoolMenus do
         {:ai_http, 400} ->
           "OpenRouter: odrzucone żądanie (HTTP 400). Sprawdź poprawność OPENROUTER_API_KEY i dostępność API dla projektu."
 
+        {:ai_http, 402} ->
+          "OpenRouter: brak środków lub przekroczony limit wydatków klucza (HTTP 402). Doładuj konto lub wybierz import bez AI."
+
         {:ai_http, 404} ->
           "OpenRouter: model lub endpoint jest niedostępny (HTTP 404). Wymagana jest aktualizacja konfiguracji modelu."
 
@@ -128,7 +132,16 @@ defmodule Trmnl.PreschoolMenus do
           "OpenRouter zwróciło niepoprawny JSON. Spróbuj ponownie lub wybierz import bez AI."
 
         :ai_invalid_menu ->
-          "Odpowiedź OpenRouter nie pasuje do jadłospisu: sprawdź kompletność dni i posiłków lub limit 140 znaków na posiłek. Spróbuj ponownie lub wybierz import bez AI."
+          "Odpowiedź OpenRouter nie pasuje do oczekiwanego formatu: brak ukończonej odpowiedzi tekstowej. Spróbuj ponownie lub wybierz import bez AI."
+
+        {:ai_invalid_menu, :shape} ->
+          "OpenRouter: niepoprawna struktura JSON jadłospisu. Oczekiwano obiektu z listą dni w polu days. Spróbuj ponownie lub wybierz import bez AI."
+
+        {:ai_invalid_menu, :dates} ->
+          "OpenRouter: daty nie zgadzają się ze źródłem — model pominął, powtórzył lub zmienił dzień. Spróbuj ponownie lub wybierz import bez AI."
+
+        {:ai_invalid_menu, :meals} ->
+          "OpenRouter: co najmniej jeden posiłek jest pusty, pominięty, nie jest tekstem lub przekracza 5000 znaków. Spróbuj ponownie lub wybierz import bez AI."
 
         :ai_truncated ->
           "OpenRouter przerwało odpowiedź po osiągnięciu limitu długości. Spróbuj ponownie lub wybierz import bez AI."
