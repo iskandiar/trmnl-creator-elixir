@@ -121,7 +121,7 @@ Add **Jadłospis przedszkola** in the layout editor, preview and publish. New bl
 
 Add **Bateria** in the layout editor. It uses the device's stored `battery-voltage` telemetry and shows an approximate charge percentage, battery icon, voltage and last contact time. The estimate follows the [TRMNL OG voltage calculation](https://help.trmnl.com/en/articles/10556850-device-battery-faq); it is not a measured state of charge. A low-battery notice appears at 10% or below. Missing telemetry shows a waiting message instead of 0%.
 
-The block defaults to 200 × 120 px. New readings appear on the next screen render after device contact, and reach the device on its next image download. Scheduled refreshes continue to update it without a Google account connected.
+The block defaults to 4 × 2 cells (160 × 80 px), with a small icon and lighter percentage text. New readings appear on the next screen render after device contact, and reach the device on its next image download. Scheduled refreshes continue to update it without a Google account connected.
 
 Preview and publication both generate escaped HTML internally and pass it to the same Chromium/Playwright → ImageMagick pipeline. It blocks external browser requests and scripts, uses DejaVu Sans in Docker, and produces a one-bit, 800×480 grayscale PNG. Text overflow is marked **Więcej ↓**; partially visible event rows are hidden. Inspect the preview when changing a block's size or content.
 

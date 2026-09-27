@@ -24,7 +24,7 @@ defmodule Trmnl.BatteryHTMLTest do
 
   test "battery block renders paired telemetry and updates after a new device report" do
     layout = %{
-      "blocks" => [block(%{"type" => "battery", "title" => "Bateria", "w" => 5, "h" => 3})]
+      "blocks" => [block(%{"type" => "battery", "title" => "Bateria", "w" => 4, "h" => 2})]
     }
 
     assert {:ok, ^layout} = Trmnl.Layout.validate(layout)

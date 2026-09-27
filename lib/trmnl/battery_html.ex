@@ -23,7 +23,7 @@ defmodule Trmnl.BatteryHTML do
 
   def percent(_), do: :unknown
 
-  def render(nil), do: "<p class=battery-empty>Połącz urządzenie, aby zobaczyć baterię.</p>"
+  def render(nil), do: "<p class=battery-empty>Połącz urządzenie.</p>"
 
   def render(device) do
     case percent(device.battery) do
@@ -42,15 +42,23 @@ defmodule Trmnl.BatteryHTML do
           "<p>#{:erlang.float_to_binary(voltage, decimals: 2)} V #{low}</p><small>Kontakt: #{contact}</small></div>"
 
       :unknown ->
-        "<p class=battery-empty>Brak odczytu baterii. Poczekaj na kontakt urządzenia.</p>"
+        "<p class=battery-empty>Brak odczytu baterii.<br>Poczekaj na kontakt.</p>"
     end
   end
 
   def styles do
-    ".battery-level{display:flex;align-items:center;gap:8px}.battery-level strong{font-size:26px;line-height:1}.battery-icon{width:48px;height:26px;flex-shrink:0}.battery p{font-size:12px;margin-top:3px}.battery small{font-size:10px}.battery-low{font-weight:bold}.battery-empty{font-size:12px}"
+    """
+    .battery-level{display:flex;align-items:center;gap:6px}
+    .battery-level strong{font-size:20px;line-height:21px;font-weight:500}
+    .battery-icon{width:32px;height:18px;flex-shrink:0}
+    .battery p{font-size:10px;line-height:12px;margin-top:1px}
+    .battery small{display:block;font-size:9px;line-height:11px;margin-top:1px}
+    .battery-low{font-weight:bold;white-space:nowrap}
+    .battery-empty{font-size:11px;line-height:13px}
+    """
   end
 
   defp icon(percent) do
-    "<svg class=battery-icon viewBox='0 0 48 26' aria-hidden='true'><rect x='1' y='2' width='41' height='22' rx='3' fill='none' stroke='black' stroke-width='2'/><path d='M44 9h3v8h-3z' fill='black'/><rect x='4' y='5' width='#{max(1, round(percent / 100 * 35))}' height='16' rx='1' fill='black'/></svg>"
+    "<svg class=battery-icon viewBox='0 0 48 26' aria-hidden='true'><rect x='1' y='2' width='41' height='22' rx='3' fill='none' stroke='black' stroke-width='1.5'/><path d='M44 9h3v8h-3z' fill='black'/><rect x='5' y='7' width='#{max(1, round(percent / 100 * 33))}' height='12' rx='1' fill='black'/></svg>"
   end
 end

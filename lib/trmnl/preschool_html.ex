@@ -28,7 +28,7 @@ defmodule Trmnl.PreschoolHTML do
               Enum.map_join(
                 [{"breakfast", "Śniadanie"}, {"lunch", "Obiad"}, {"snack", "Podwieczorek"}],
                 fn {field, label} ->
-                  "<div class=preschool-meal><b>#{label}</b><p>#{escape(short(day[field]))}</p></div>"
+                  "<div class=preschool-meal><b>#{label}:</b> <p>#{escape(short(day[field]))}</p></div>"
                 end
               )
             else
@@ -51,7 +51,16 @@ defmodule Trmnl.PreschoolHTML do
   end
 
   def styles do
-    ".preschool-days{display:grid;gap:6px}.preschool-day{min-width:0;border-right:1px solid black;padding-right:4px}.preschool-day:last-child{border:0}.preschool-day>strong{display:block;border-bottom:1px solid black;padding-bottom:2px}.preschool-meal{margin-top:3px;font-size:12px;line-height:1.1}.preschool-meal b{font-size:11px}.preschool-source{display:block;margin-top:5px;font-size:9px}"
+    """
+    .preschool-days{display:grid;gap:5px}
+    .preschool-day{min-width:0;border-right:1px solid black;padding-right:4px}
+    .preschool-day:last-child{border:0}
+    .preschool-day>strong{display:block;font-size:13px;line-height:15px;border-bottom:1px solid black;padding-bottom:1px}
+    .preschool-meal{margin-top:3px;font-size:11px;line-height:11px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden}
+    .preschool-meal b{font-size:10px}
+    .preschool-meal p{display:inline}
+    .preschool-source{display:block;margin-top:3px;font-size:8px;line-height:9px}
+    """
   end
 
   defp source(menu) do

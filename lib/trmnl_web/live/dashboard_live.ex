@@ -69,8 +69,8 @@ defmodule TrmnlWeb.DashboardLive do
       when type in ~w(preschool battery weather header text agenda week month today_tomorrow dinner reminders countdowns family_note) do
     {w, h} =
       case type do
-        "preschool" -> {10, 7}
-        "battery" -> {5, 3}
+        "preschool" -> {10, 5}
+        "battery" -> {4, 2}
         "weather" -> {10, 5}
         "week" -> {20, 4}
         "month" -> {10, 6}
