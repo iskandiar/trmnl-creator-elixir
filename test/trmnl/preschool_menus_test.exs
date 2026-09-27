@@ -80,6 +80,8 @@ defmodule Trmnl.PreschoolMenusTest do
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       request = Jason.decode!(body)
       assert request["model"] == "openrouter/free"
+      assert request["reasoning"] == %{"enabled" => false}
+      assert request["max_tokens"] == 16_384
       refute Map.has_key?(request, "models")
       assert request["provider"]["require_parameters"]
       assert request["response_format"]["type"] == "json_schema"

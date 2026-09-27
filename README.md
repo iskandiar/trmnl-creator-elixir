@@ -117,6 +117,8 @@ The default mode reads the HTML table directly, free without an API key. Optiona
 
 Existing Gemini selections migrate automatically to OpenRouter, retaining the last successful menu. Replace `GEMINI_API_KEY` with `OPENROUTER_API_KEY`; the old key is no longer used. Run **Pobierz jadłospis teraz** after configuring the new key. The first OpenRouter import regenerates summaries even when the source menu is unchanged.
 
+Menu requests ask OpenRouter to disable reasoning and allow up to 16,384 output tokens, since reasoning models may otherwise exhaust the budget before returning JSON. Support varies by model. Truncated responses are rejected and the previous menu remains available.
+
 Add **Jadłospis przedszkola** in the layout editor, preview and publish. New blocks show **Dzisiaj** and **Jutro** (today and tomorrow), with breakfast, lunch and afternoon snack. A day without a published menu is labeled explicitly, including weekends. You can change the number of upcoming days in the inspector. The setup panel retains the full source text; compact blocks may shorten meal descriptions. Consult the original menu for complete ingredients and allergens. Dates come from the source, so expired menus are never relabeled as the current week. Failed imports preserve the previous menu and display an error in setup. This menu is separate from family meal plans.
 
 ## Battery block

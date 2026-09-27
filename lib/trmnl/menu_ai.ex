@@ -42,7 +42,9 @@ defmodule Trmnl.MenuAI do
           %{role: "user", content: Jason.encode!(days)}
         ],
         temperature: 0,
-        max_tokens: 4096,
+        # Free routing may select a reasoning model whose hidden tokens share this budget.
+        reasoning: %{enabled: false},
+        max_tokens: 16_384,
         provider: %{require_parameters: true},
         response_format: %{
           type: "json_schema",
