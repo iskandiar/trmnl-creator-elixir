@@ -57,9 +57,10 @@ defmodule TrmnlWeb.DashboardLive do
   end
 
   def handle_event("add", %{"type" => type}, socket)
-      when type in ~w(header text agenda week month today_tomorrow dinner reminders countdowns family_note) do
+      when type in ~w(weather header text agenda week month today_tomorrow dinner reminders countdowns family_note) do
     {w, h} =
       case type do
+        "weather" -> {8, 4}
         "week" -> {20, 4}
         "month" -> {10, 6}
         "agenda" -> {8, 4}
@@ -80,6 +81,7 @@ defmodule TrmnlWeb.DashboardLive do
           "h" => h,
           "title" =>
             %{
+              "weather" => "Pogoda",
               "header" => "Dzisiaj",
               "text" => "Notatka",
               "agenda" => "Plan dnia",
@@ -130,7 +132,10 @@ defmodule TrmnlWeb.DashboardLive do
 
   def handle_event("configure", %{"block" => attrs}, socket) do
     updates =
-      Map.take(attrs, ~w(title text calendars appearance density calendar_style))
+      Map.take(
+        attrs,
+        ~w(title text calendars appearance density calendar_style latitude longitude)
+      )
       |> Map.put_new("calendars", [])
 
     updates =
@@ -313,6 +318,7 @@ defmodule TrmnlWeb.DashboardLive do
     do:
       Family.label(type) ||
         %{
+          "weather" => "Pogoda",
           "header" => "Data i godzina",
           "agenda" => "Agenda",
           "week" => "Tydzień",
@@ -412,6 +418,7 @@ defmodule TrmnlWeb.DashboardLive do
                     {type, label} <-
                       [
                         {"header", "Data i godzina"},
+                        {"weather", "Pogoda"},
                         {"agenda", "Agenda"},
                         {"week", "Tydzień"},
                         {"month", "Miesiąc"},
@@ -447,13 +454,16 @@ defmodule TrmnlWeb.DashboardLive do
                     phx-value-id={b["id"]}
                   >
                     <span class="block-type">{block_label(b["type"])}</span><strong>{b["title"]}</strong><p>
-                      {if b["type"] == "text",
-                        do: b["text"],
-                        else:
-                          if(b["type"] in Family.kinds(),
-                            do: "Treść z panelu rodzinnego",
-                            else: "#{b["w"]} × #{b["h"]} · #{length(b["calendars"])} kalendarzy"
-                          )}
+                      <%= cond do %>
+                        <% b["type"] == "text" -> %>
+                          {b["text"]}
+                        <% b["type"] == "weather" -> %>
+                          Prognoza · MET Norway
+                        <% b["type"] in Family.kinds() -> %>
+                          Treść z panelu rodzinnego
+                        <% true -> %>
+                          {b["w"]} × {b["h"]} · {length(b["calendars"])} kalendarzy
+                      <% end %>
                     </p><span class="resize" aria-label="Zmień rozmiar">↘</span>
                   </div>
                 </div>
@@ -547,6 +557,49 @@ defmodule TrmnlWeb.DashboardLive do
                 <p :if={@block["type"] == "header"} class="hint">
                   Czas z momentu generowania obrazu · ±5 min przy działającym połączeniu. TRMNL pobiera ekran z zegarem co 4 minuty.
                 </p>
+                <fieldset :if={@block["type"] == "weather"} id="weather-settings">
+                  <legend>Lokalizacja pogody</legend>
+                  <label for="weather-latitude">
+                    Szerokość geograficzna
+                    <input
+                      id="weather-latitude"
+                      name="block[latitude]"
+                      type="number"
+                      min="-90"
+                      max="90"
+                      step="0.0001"
+                      placeholder="52.2297"
+                      value={@block_form[:latitude].value}
+                      required
+                    />
+                  </label>
+                  <label for="weather-longitude">
+                    Długość geograficzna
+                    <input
+                      id="weather-longitude"
+                      name="block[longitude]"
+                      type="number"
+                      min="-180"
+                      max="180"
+                      step="0.0001"
+                      placeholder="21.0122"
+                      value={@block_form[:longitude].value}
+                      required
+                    />
+                  </label>
+                  <p class="hint">
+                    Wpisz współrzędne z mapy, a nazwę miejscowości w tytule bloku. Godziny: Europe/Warsaw.
+                  </p>
+                  <p class="hint">
+                    Prognoza z MET Norway (dostawcy danych Yr), bez klucza API.
+                    <a href="https://api.met.no/" target="_blank" rel="noopener noreferrer">Źródło</a>
+                    · <a
+                      href="https://creativecommons.org/licenses/by/4.0/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >CC BY 4.0</a>. Dane zaokrąglone i opisy przetłumaczone.
+                  </p>
+                </fieldset>
                 <label>Rozmiar tekstu<select name="block[font_size]"><option
                   :for={n <- [12, 14, 16, 18, 20, 24]}
                   value={n}

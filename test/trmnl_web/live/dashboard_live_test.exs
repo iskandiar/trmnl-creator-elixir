@@ -2,6 +2,31 @@ defmodule TrmnlWeb.DashboardLiveTest do
   use TrmnlWeb.ConnCase
   import Phoenix.LiveViewTest
 
+  test "weather location can be configured and persisted without calendar settings", %{conn: conn} do
+    conn = init_test_session(conn, admin: TrmnlWeb.Auth.issue())
+    {:ok, view, _} = live(conn, "/")
+    view |> element("#add-weather") |> render_click()
+    assert has_element?(view, "#weather-settings")
+    refute has_element?(view, "input[name='block[calendars][]']")
+
+    view
+    |> form("form[id^=configure]",
+      block: %{title: "Warszawa", latitude: "52.2297", longitude: "21.0122"}
+    )
+    |> render_submit()
+
+    view |> element("#save") |> render_click()
+    [block] = Trmnl.Publication.screen().draft["blocks"]
+    assert block["type"] == "weather"
+    assert block["latitude"] == "52.2297"
+    assert block["longitude"] == "21.0122"
+
+    {:ok, reopened, _} = live(conn, "/")
+    reopened |> element(".grid-block") |> render_click()
+    assert has_element?(reopened, "#weather-latitude[value='52.2297']")
+    assert {:error, _} = Trmnl.Layout.validate(%{"blocks" => [Map.put(block, "latitude", "91")]})
+  end
+
   test "small blocks and 12px text can be configured, saved and reopened", %{conn: conn} do
     conn = init_test_session(conn, admin: TrmnlWeb.Auth.issue())
     {:ok, view, _} = live(conn, "/")

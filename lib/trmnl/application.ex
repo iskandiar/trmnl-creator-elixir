@@ -10,6 +10,7 @@ defmodule Trmnl.Application do
     children = [
       TrmnlWeb.Telemetry,
       Trmnl.Repo,
+      Trmnl.Weather,
       {Oban, Application.fetch_env!(:trmnl, Oban)},
       {DNSCluster, query: Application.get_env(:trmnl, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Trmnl.PubSub},

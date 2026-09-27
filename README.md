@@ -90,12 +90,22 @@ Dates follow Europe/Warsaw. Completed one-off chores disappear from the screen b
 
 ## Edit, preview and publish
 
-- Open **Układ ekranu** and add a date/time, agenda, week, month, static text or family module block. Drag it to move; drag its bottom-right handle to resize. The inspector also provides numeric geometry controls for keyboard use. Switching tabs preserves the working layout.
-- Choose calendars separately for each block, a title, text size and agenda horizon (1–30 days). An empty calendar selection intentionally shows no events. Week blocks need at least 14 columns and three rows.
+- Open **Układ ekranu** and add a date/time, agenda, week, month, weather, static text or family module block. Drag it to move; drag its bottom-right handle to resize. The inspector also provides numeric geometry controls for keyboard use. Switching tabs preserves the working layout.
+- Choose calendars separately for each block, a title, text size and agenda horizon (1–30 days). An empty calendar selection intentionally shows no events. Blocks can be as small as one grid cell (40 × 40 px); choose a larger size to fit their content.
 - Click **Zastosuj** to apply inspector edits, then **Zapisz szkic** to persist the draft. Blocks may not overlap or leave the 20×12 grid. Concurrent draft edits are rejected using revision checks.
 - **Podgląd** renders the current working layout, without publishing it. **Publikuj na TRMNL** saves and publishes that draft. The previous publication remains active until the new render succeeds.
 
 Family blocks have the same geometry, title and font controls. Meals and reminders also have a 1–30 day horizon; overdue and undated reminders remain visible. Edit their entries in **Treść rodzinna**, then use Preview to check how much fits. Google calendar selection applies to agenda, week and month blocks. Choose classic, minimal or contrast headers, compact/comfortable spacing, grouped agenda days or week rows. The month overview shows event counts; older days outside the synchronization window show a dash.
+
+## Weather block
+
+Add **Pogoda** in the layout editor. Set the title to your town and enter its latitude and longitude (for example, Warsaw: `52.2297`, `21.0122`). Apply, preview and publish. No API key or Google account is required. Each weather block can use a different location.
+
+The block shows forecast temperature (°C), wind (m/s), precipitation for the next hour (mm), and upcoming forecast times in Europe/Warsaw. Missing precipitation is shown as unavailable, not zero. This is forecast data, not live observations.
+
+Data comes from [MET Norway Locationforecast](https://api.met.no/weatherapi/locationforecast/2.0/documentation), the forecast service used by Yr. Requests run on the server with an identifying User-Agent, coordinates limited to four decimal places, and an in-memory cache honoring Expires and Last-Modified headers. Scheduled screen refreshes reuse that cache; failures back off for five minutes and show marked cached forecasts when available, otherwise an unavailable message. The cache resets on application restart.
+
+Weather data is attributed to MET Norway under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Values are rounded and condition descriptions translated into Polish. API usage follows the [MET Norway terms](https://api.met.no/doc/TermsOfService).
 
 Preview and publication both generate escaped HTML internally and pass it to the same Chromium/Playwright → ImageMagick pipeline. It blocks external browser requests and scripts, uses DejaVu Sans in Docker, and produces a one-bit, 800×480 grayscale PNG. Text overflow is marked **Więcej ↓**; partially visible event rows are hidden. Inspect the preview when changing a block's size or content.
 

@@ -1,5 +1,5 @@
 defmodule Trmnl.Layout do
-  @types ~w(agenda week month header text today_tomorrow dinner reminders countdowns family_note)
+  @types ~w(weather agenda week month header text today_tomorrow dinner reminders countdowns family_note)
   # Retain the stored type key so existing blocks and family entries keep working.
   def upgrade(layout) do
     Map.update!(layout, "blocks", fn blocks ->
@@ -39,6 +39,7 @@ defmodule Trmnl.Layout do
       Enum.all?(~w(x y w h), &is_integer(b[&1])) and
       b["x"] >= 0 and b["y"] >= 0 and b["w"] >= 1 and b["h"] >= 1 and
       b["x"] + b["w"] <= 20 and b["y"] + b["h"] <= 12 and
+      valid_weather?(b) and
       Map.get(b, "appearance", "classic") in ~w(classic minimal contrast) and
       Map.get(b, "density", "compact") in ~w(compact comfortable) and
       Map.get(b, "calendar_style", "list") in ~w(list grouped rows) and
@@ -50,6 +51,14 @@ defmodule Trmnl.Layout do
   end
 
   defp valid_block?(_), do: false
+
+  defp valid_weather?(%{"type" => "weather"} = block) do
+    coords = [Map.get(block, "latitude", ""), Map.get(block, "longitude", "")]
+    coords == ["", ""] or match?({:ok, _}, Trmnl.Weather.coordinates(block))
+  end
+
+  defp valid_weather?(_), do: true
+
   defp overlaps?([]), do: false
 
   defp overlaps?([a | rest]) do
