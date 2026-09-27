@@ -25,7 +25,7 @@ From your local repository checkout (with Python 3 and Docker Compose installed)
 python3 scripts/generate_env.py
 ```
 
-Run this only for a fresh installation. If `.env` already exists, reuse it. Set `PUBLIC_URL` in `.env` to the TrueNAS address, for example `http://192.168.1.50:4000`. Google credentials can remain empty for initial setup. Optionally add `TRMNL_IMAGE_TAG=sha-<full commit SHA>` or a published version tag to select both images together.
+Run this only for a fresh installation. If `.env` already exists, reuse it. Set `PUBLIC_URL` in `.env` to the TrueNAS address, for example `http://192.168.1.50:4000`. Google credentials can remain empty for initial setup. The Compose template uses `latest` and `pull_policy: always` for both GHCR images. For a pinned deployment, edit both image tags in the YAML to the same published version or `sha-<full commit SHA>`.
 
 Validate and render a self-contained configuration:
 
@@ -53,8 +53,10 @@ If installation fails, inspect the app and database container logs in TrueNAS. P
 
 1. Back up the database before upgrading. From the database container shell, `pg_dump -U trmnl -d trmnl -Fc -f /var/lib/postgresql/data/pre-update.dump` creates a dump in the mounted dataset. Copy that file to a separate backup location before continuing; a file on the same dataset is not an independent backup.
 2. Publish the next release and wait for both image builds to succeed.
-3. Edit the existing TrueNAS app YAML and change both GHCR image tags to the same new version or SHA tag. Explicit new tags avoid ambiguity about cached `latest` images.
-4. Save/redeploy and check health and migration logs.
+3. In the existing TrueNAS app, use the update/pull-latest-image action, or redeploy the app. Both GHCR services use `latest` with `pull_policy: always`, so Compose pulls them when deploying.
+4. Check health and migration logs.
+
+The pull policy does not poll GitHub or trigger a deployment when a commit arrives. Fully unattended updates require a separate deployment trigger.
 
 Keep the database mount, database credentials, encryption key and other secrets unchanged. PostgreSQL reuses its existing data; Ecto applies only pending migrations. Updates do not run seeds or reset the database. A migration can still intentionally change or remove data, so review release changes and retain backups. Reverting an image does not undo schema migrations.
 

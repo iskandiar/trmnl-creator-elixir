@@ -63,7 +63,8 @@ defmodule TrmnlWeb.DeviceController do
             File.read!(Application.app_dir(:trmnl, "priv/static/setup.png"))
 
         conn
-        |> put_resp_content_type("image/png")
+        # Firmware v1.5.6 compares the complete header to "image/png".
+        |> put_resp_content_type("image/png", nil)
         |> put_resp_header("cache-control", "no-store")
         |> send_resp(200, png)
 
@@ -78,7 +79,7 @@ defmodule TrmnlWeb.DeviceController do
     case Phoenix.Token.verify(TrmnlWeb.Endpoint, "device-image", token, max_age: 86400) do
       {:ok, "screen"} ->
         conn
-        |> put_resp_content_type("image/bmp")
+        |> put_resp_content_type("image/bmp", nil)
         |> send_resp(200, File.read!(Application.app_dir(:trmnl, "priv/static/setup.bmp")))
 
       _ ->

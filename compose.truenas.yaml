@@ -28,7 +28,8 @@ services:
     restart: unless-stopped
     logging: *default-logging
   renderer:
-    image: ghcr.io/iskandiar/trmnl-creator-elixir-renderer:${TRMNL_IMAGE_TAG:-latest}
+    image: ghcr.io/iskandiar/trmnl-creator-elixir-renderer:latest
+    pull_policy: always
     platform: linux/amd64
     environment:
       RENDERER_SECRET: ${RENDERER_SECRET:?Set RENDERER_SECRET}
@@ -42,7 +43,8 @@ services:
     restart: unless-stopped
     logging: *default-logging
   app:
-    image: ghcr.io/iskandiar/trmnl-creator-elixir:${TRMNL_IMAGE_TAG:-latest}
+    image: ghcr.io/iskandiar/trmnl-creator-elixir:latest
+    pull_policy: always
     platform: linux/amd64
     environment:
       DATABASE_URL: ecto://trmnl:${POSTGRES_PASSWORD}@db/trmnl

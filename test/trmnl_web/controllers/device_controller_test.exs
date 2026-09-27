@@ -10,8 +10,9 @@ defmodule TrmnlWeb.DeviceControllerTest do
     assert setup["status"] == 200
     setup_uri = URI.parse(setup["image_url"])
 
-    assert <<"BM", _::binary>> =
-             build_conn() |> get(setup_uri.path <> "?" <> setup_uri.query) |> response(200)
+    setup_image = build_conn() |> get(setup_uri.path <> "?" <> setup_uri.query)
+    assert get_resp_header(setup_image, "content-type") == ["image/bmp"]
+    assert <<"BM", _::binary>> = response(setup_image, 200)
 
     assert build_conn() |> put_req_header("id", @mac) |> get("/api/setup") |> response(401)
     token = setup["api_key"]
@@ -23,23 +24,25 @@ defmodule TrmnlWeb.DeviceControllerTest do
     display = auth.() |> get("/api/display") |> json_response(200)
     assert display["refresh_rate"] == 900
 
-    png =
+    image_conn =
       build_conn()
       |> get(URI.parse(display["image_url"]).path <> "?" <> URI.parse(display["image_url"]).query)
-      |> response(200)
 
+    # Firmware v1.5.6 selects its decoder with an exact Content-Type comparison.
+    assert get_resp_header(image_conn, "content-type") == ["image/png"]
+    png = response(image_conn, 200)
     assert <<137, 80, 78, 71, _::binary>> = png
     assert {:ok, _} = Trmnl.Publication.save(%{"blocks" => [block()]}, 0)
     assert {:ok, published} = Trmnl.Publication.publish()
     display = auth.() |> get("/api/display") |> json_response(200)
     assert display["filename"] == published.image_hash
 
-    assert build_conn()
-           |> get(
-             URI.parse(display["image_url"]).path <> "?" <> URI.parse(display["image_url"]).query
-           )
-           |> response(200) ==
-             published.image
+    published_image =
+      build_conn()
+      |> get(URI.parse(display["image_url"]).path <> "?" <> URI.parse(display["image_url"]).query)
+
+    assert get_resp_header(published_image, "content-type") == ["image/png"]
+    assert response(published_image, 200) == published.image
 
     assert auth.()
            |> put_req_header("battery-voltage", "3.9")
